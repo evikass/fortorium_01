@@ -291,3 +291,6 @@ prisma:query SELECT `main`.`AnimationProject`.`id`, `main`.`AnimationProject`.`t
  GET / 200 in 12ms (compile: 1555µs, render: 11ms)
  GET / 200 in 11ms (compile: 1448µs, render: 9ms)
  GET / 200 in 19ms (compile: 1879µs, render: 17ms)
+✓ Compiled in 272ms
+⚠ Cross origin request detected from preview-chat-ea45cec0-e645-4060-97d1-dd2bcdf50b01.space.z.ai to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
