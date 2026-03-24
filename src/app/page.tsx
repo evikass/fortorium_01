@@ -223,6 +223,139 @@ const RELATIONSHIP_TYPES = [
   { id: 'enemy', name: 'Враг', nameEn: 'Enemy', icon: '💀', color: '#6b7280' },
 ];
 
+// ============================================
+// СИСТЕМА КЛЮЧЕВЫХ КАДРОВ v3.0.0
+// ============================================
+interface Keyframe {
+  id: string;
+  sceneIndex: number;
+  time: number; // секунды от начала сцены
+  duration: number; // длительность кадра
+  title: string;
+  description: string;
+  action: string; // действие персонажа
+  cameraAngle: string; // ракурс камеры
+  movement: string; // тип движения
+  emotion?: string; // эмоция персонажа
+  imageUrl?: string; // сгенерированное изображение
+  notes?: string; // заметки аниматора
+}
+
+const CAMERA_ANGLES = [
+  { id: 'wide', name: 'Общий план', nameEn: 'Wide Shot', icon: '🎬', description: 'Полная сцена, видны все персонажи и окружение' },
+  { id: 'medium', name: 'Средний план', nameEn: 'Medium Shot', icon: '🎥', description: 'Персонаж по пояс, видно жестикуляцию' },
+  { id: 'close', name: 'Крупный план', nameEn: 'Close-up', icon: '👁️', description: 'Лицо персонажа, эмоции' },
+  { id: 'extreme-close', name: 'Сверхкрупный', nameEn: 'Extreme Close-up', icon: '🔍', description: 'Деталь: глаза, губы, рука' },
+  { id: 'over-shoulder', name: 'Из-за плеча', nameEn: 'Over the Shoulder', icon: '👤', description: 'Вид из-за плеча одного персонажа на другого' },
+  { id: 'pov', name: 'От первого лица', nameEn: 'POV', icon: '👀', description: 'Вид глазами персонажа' },
+  { id: 'bird-eye', name: 'С высоты птичьего полёта', nameEn: "Bird's Eye", icon: '🦅', description: 'Вид сверху на сцену' },
+  { id: 'low-angle', name: 'Снизу вверх', nameEn: 'Low Angle', icon: '📐', description: 'Герой выглядит величественно' },
+  { id: 'dutch', name: 'Голландский угол', nameEn: 'Dutch Angle', icon: '↗️', description: 'Наклонный кадр для напряжения' },
+];
+
+const MOVEMENT_TYPES = [
+  { id: 'static', name: 'Статика', nameEn: 'Static', icon: '📷', description: 'Камера неподвижна' },
+  { id: 'pan', name: 'Панорама', nameEn: 'Pan', icon: '↔️', description: 'Горизонтальное движение камеры' },
+  { id: 'tilt', name: 'Наклон', nameEn: 'Tilt', icon: '↕️', description: 'Вертикальное движение камеры' },
+  { id: 'zoom-in', name: 'Приближение', nameEn: 'Zoom In', icon: '🔎', description: 'Плавное приближение к объекту' },
+  { id: 'zoom-out', name: 'Отдаление', nameEn: 'Zoom Out', icon: '🔭', description: 'Плавное отдаление от объекта' },
+  { id: 'dolly', name: 'Долли', nameEn: 'Dolly', icon: '🛤️', description: 'Движение камеры к/от объекту' },
+  { id: 'tracking', name: 'Слежение', nameEn: 'Tracking', icon: '🎯', description: 'Камера следует за объектом' },
+  { id: 'crane', name: 'Кран', nameEn: 'Crane', icon: '🏗️', description: 'Подъём/опускание камеры' },
+  { id: 'handheld', name: 'Ручная камера', nameEn: 'Handheld', icon: '🤳', description: 'Эффект трясущейся камеры' },
+];
+
+const EMOTION_TYPES = [
+  { id: 'neutral', name: 'Нейтрально', icon: '😐' },
+  { id: 'happy', name: 'Счастье', icon: '😊' },
+  { id: 'sad', name: 'Грусть', icon: '😢' },
+  { id: 'angry', name: 'Гнев', icon: '😠' },
+  { id: 'surprised', name: 'Удивление', icon: '😲' },
+  { id: 'fear', name: 'Страх', icon: '😨' },
+  { id: 'disgust', name: 'Отвращение', icon: '🤢' },
+  { id: 'love', name: 'Любовь', icon: '🥰' },
+  { id: 'confused', name: 'Растерянность', icon: '😕' },
+  { id: 'determined', name: 'Решимость', icon: '😤' },
+];
+
+// ============================================
+// МУЗЫКАЛЬНАЯ СТУДИЯ v3.0.0 (FL Studio Style)
+// ============================================
+interface MusicTrack {
+  id: string;
+  name: string;
+  instrument: string;
+  volume: number;
+  pan: number;
+  muted: boolean;
+  solo: boolean;
+  patterns: MusicPattern[];
+  color: string;
+}
+
+interface MusicPattern {
+  id: string;
+  name: string;
+  duration: number; // в шагах (beats)
+  notes: MusicNote[];
+  bpm: number;
+}
+
+interface MusicNote {
+  id: string;
+  pitch: number; // MIDI note number (0-127)
+  startTime: number; // шаг от начала паттерна
+  duration: number; // длительность в шагах
+  velocity: number; // громкость ноты (0-127)
+}
+
+interface MusicProject {
+  id: string;
+  name: string;
+  bpm: number;
+  timeSignature: string;
+  key: string;
+  tracks: MusicTrack[];
+  totalDuration: number;
+}
+
+const INSTRUMENTS = [
+  { id: 'piano', name: 'Фортепиано', nameEn: 'Piano', icon: '🎹', color: '#8b5cf6', category: 'keys' },
+  { id: 'strings', name: 'Струнные', nameEn: 'Strings', icon: '🎻', color: '#f59e0b', category: 'orchestra' },
+  { id: 'brass', name: 'Духовые', nameEn: 'Brass', icon: '🎺', color: '#ef4444', category: 'orchestra' },
+  { id: 'drums', name: 'Ударные', nameEn: 'Drums', icon: '🥁', color: '#6b7280', category: 'percussion' },
+  { id: 'bass', name: 'Бас', nameEn: 'Bass', icon: '🎸', color: '#10b981', category: 'bass' },
+  { id: 'guitar', name: 'Гитара', nameEn: 'Guitar', icon: '🎸', color: '#f97316', category: 'strings' },
+  { id: 'synth', name: 'Синтезатор', nameEn: 'Synth', icon: '🎛️', color: '#06b6d4', category: 'electronic' },
+  { id: 'pad', name: 'Пэд', nameEn: 'Pad', icon: '🌊', color: '#a855f7', category: 'electronic' },
+  { id: 'choir', name: 'Хор', nameEn: 'Choir', icon: '🎤', color: '#ec4899', category: 'vocals' },
+  { id: 'flute', name: 'Флейта', nameEn: 'Flute', icon: '🎵', color: '#22d3ee', category: 'wind' },
+  { id: 'harp', name: 'Арфа', nameEn: 'Harp', icon: '🪕', color: '#84cc16', category: 'strings' },
+  { id: 'timpani', name: 'Литавры', nameEn: 'Timpani', icon: '🥁', color: '#78716c', category: 'percussion' },
+  { id: 'xylophone', name: 'Ксилофон', nameEn: 'Xylophone', icon: '🔔', color: '#fbbf24', category: 'percussion' },
+  { id: 'organ', name: 'Орган', nameEn: 'Organ', icon: '⛪', color: '#7c3aed', category: 'keys' },
+  { id: 'accordion', name: 'Аккордеон', nameEn: 'Accordion', icon: '🪗', color: '#dc2626', category: 'keys' },
+];
+
+const MUSICAL_KEYS = [
+  'C Major', 'C Minor', 'D Major', 'D Minor', 'E Major', 'E Minor',
+  'F Major', 'F Minor', 'G Major', 'G Minor', 'A Major', 'A Minor',
+  'B Major', 'B Minor', 'C# Major', 'C# Minor', 'F# Major', 'F# Minor'
+];
+
+const TIME_SIGNATURES = ['4/4', '3/4', '6/8', '2/4', '5/4', '7/8'];
+
+const PRESET_PATTERNS = [
+  { id: 'epic-intro', name: 'Эпичное вступление', icon: '⚔️', instruments: ['strings', 'brass', 'timpani'] },
+  { id: 'happy-theme', name: 'Весёлая тема', icon: '🌈', instruments: ['piano', 'flute', 'strings'] },
+  { id: 'sad-moment', name: 'Печальный момент', icon: '😢', instruments: ['piano', 'strings'] },
+  { id: 'action-chase', name: 'Погоня/Экшн', icon: '🏃', instruments: ['drums', 'synth', 'brass'] },
+  { id: 'magical', name: 'Волшебство', icon: '✨', instruments: ['harp', 'choir', 'pad'] },
+  { id: 'romantic', name: 'Романтика', icon: '💕', instruments: ['piano', 'strings', 'flute'] },
+  { id: 'mystery', name: 'Тайна/Загадка', icon: '🔮', instruments: ['synth', 'pad', 'choir'] },
+  { id: 'victory', name: 'Победа', icon: '🏆', instruments: ['brass', 'drums', 'strings', 'choir'] },
+];
+
 // Жанры для генератора идей
 const GENRES = [
   { value: 'adventure', label: 'Приключение', icon: '🗺️' },
@@ -560,6 +693,35 @@ export default function AnimationStudio() {
   
   // Статистика проекта
   const [showProjectStats, setShowProjectStats] = useState(false);
+  
+  // ============================================
+  // СИСТЕМА КЛЮЧЕВЫХ КАДРОВ v3.0.0
+  // ============================================
+  const [keyframes, setKeyframes] = useState<Keyframe[]>([]);
+  const [selectedKeyframe, setSelectedKeyframe] = useState<Keyframe | null>(null);
+  const [showKeyframeEditor, setShowKeyframeEditor] = useState(false);
+  const [editingSceneForKeyframe, setEditingSceneForKeyframe] = useState<number | null>(null);
+  const [showKeyframeTimeline, setShowKeyframeTimeline] = useState(true);
+  
+  // ============================================
+  // МУЗЫКАЛЬНАЯ СТУДИЯ v3.0.0
+  // ============================================
+  const [musicProject, setMusicProject] = useState<MusicProject>({
+    id: 'music-1',
+    name: 'Новый проект',
+    bpm: 120,
+    timeSignature: '4/4',
+    key: 'C Major',
+    tracks: [],
+    totalDuration: 16
+  });
+  const [showMusicStudio, setShowMusicStudio] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
+  const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playPosition, setPlayPosition] = useState(0);
+  const [showPianoRoll, setShowPianoRoll] = useState(false);
+  const [showInstrumentSelector, setShowInstrumentSelector] = useState(false);
   
   // Модальные окна
   const [showHireDialog, setShowHireDialog] = useState(false);
@@ -1295,6 +1457,361 @@ export default function AnimationStudio() {
     ];
     return colors[index % colors.length];
   };
+
+  // ============================================
+  // СИСТЕМА КЛЮЧЕВЫХ КАДРОВ v3.0.0
+  // ============================================
+  
+  // Создать новый ключевой кадр
+  const createKeyframe = (sceneIndex: number) => {
+    const scene = script?.scenes?.[sceneIndex];
+    if (!scene) return;
+    
+    const existingKeyframes = keyframes.filter(k => k.sceneIndex === sceneIndex);
+    const lastTime = existingKeyframes.length > 0 
+      ? Math.max(...existingKeyframes.map(k => k.time + k.duration))
+      : 0;
+    
+    const newKeyframe: Keyframe = {
+      id: `kf-${Date.now()}`,
+      sceneIndex,
+      time: lastTime,
+      duration: 2,
+      title: `Кадр ${existingKeyframes.length + 1}`,
+      description: '',
+      action: '',
+      cameraAngle: 'medium',
+      movement: 'static',
+      emotion: 'neutral',
+      notes: ''
+    };
+    
+    setKeyframes(prev => [...prev, newKeyframe]);
+    setSelectedKeyframe(newKeyframe);
+    
+    toast({
+      title: "🎬 " + (language === 'ru' ? 'Ключевой кадр создан' : 'Keyframe created'),
+      description: language === 'ru' ? `Сцена ${sceneIndex + 1}, время ${lastTime}с` : `Scene ${sceneIndex + 1}, time ${lastTime}s`,
+    });
+  };
+  
+  // Обновить ключевой кадр
+  const updateKeyframe = (id: string, updates: Partial<Keyframe>) => {
+    setKeyframes(prev => prev.map(k => k.id === id ? { ...k, ...updates } : k));
+  };
+  
+  // Удалить ключевой кадр
+  const deleteKeyframe = (id: string) => {
+    setKeyframes(prev => prev.filter(k => k.id !== id));
+    if (selectedKeyframe?.id === id) {
+      setSelectedKeyframe(null);
+    }
+    toast({
+      title: "🗑️ " + (language === 'ru' ? 'Кадр удалён' : 'Keyframe deleted'),
+    });
+  };
+  
+  // Получить ключевые кадры для сцены
+  const getKeyframesForScene = (sceneIndex: number) => {
+    return keyframes.filter(k => k.sceneIndex === sceneIndex).sort((a, b) => a.time - b.time);
+  };
+  
+  // Генерация изображения для ключевого кадра
+  const generateKeyframeImage = async (keyframe: Keyframe) => {
+    if (!keyframe || !script) return;
+    
+    const scene = script.scenes[keyframe.sceneIndex];
+    if (!scene) return;
+    
+    const cameraAngle = CAMERA_ANGLES.find(a => a.id === keyframe.cameraAngle);
+    const movement = MOVEMENT_TYPES.find(m => m.id === keyframe.movement);
+    const styleInfo = ANIMATION_STYLES.find(s => s.value === newProject.style);
+    
+    const prompt = `${styleInfo?.label || 'Animation'} style, ${cameraAngle?.name || 'Medium shot'}, ${movement?.name || 'Static'}, ${keyframe.action || scene.description}, ${keyframe.description || ''}, keyframe animation, high quality`;
+    
+    const encodedPrompt = encodeURIComponent(prompt);
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=768&nologo=true`;
+    
+    updateKeyframe(keyframe.id, { imageUrl });
+    
+    toast({
+      title: "🖼️ " + (language === 'ru' ? 'Изображение сгенерировано' : 'Image generated'),
+      description: keyframe.title,
+    });
+  };
+  
+  // Автоматическая генерация ключевых кадров для сцены
+  const autoGenerateKeyframes = (sceneIndex: number) => {
+    const scene = script?.scenes?.[sceneIndex];
+    if (!scene) return;
+    
+    const duration = scene.duration || 5;
+    const numKeyframes = Math.max(2, Math.ceil(duration / 2));
+    const keyframeDuration = duration / numKeyframes;
+    
+    // Удаляем существующие ключевые кадры для этой сцены
+    setKeyframes(prev => prev.filter(k => k.sceneIndex !== sceneIndex));
+    
+    const newKeyframes: Keyframe[] = [];
+    
+    for (let i = 0; i < numKeyframes; i++) {
+      const angleIndex = i % CAMERA_ANGLES.length;
+      const movementIndex = i % MOVEMENT_TYPES.length;
+      
+      newKeyframes.push({
+        id: `kf-auto-${sceneIndex}-${i}-${Date.now()}`,
+        sceneIndex,
+        time: i * keyframeDuration,
+        duration: keyframeDuration,
+        title: `${scene.title} - Кадр ${i + 1}`,
+        description: scene.description,
+        action: scene.action || '',
+        cameraAngle: CAMERA_ANGLES[angleIndex].id,
+        movement: MOVEMENT_TYPES[movementIndex].id,
+        emotion: 'neutral',
+        notes: ''
+      });
+    }
+    
+    setKeyframes(prev => [...prev, ...newKeyframes]);
+    
+    toast({
+      title: "🎬 " + (language === 'ru' ? 'Ключевые кадры созданы' : 'Keyframes created'),
+      description: language === 'ru' ? `${numKeyframes} кадров для сцены ${sceneIndex + 1}` : `${numKeyframes} keyframes for scene ${sceneIndex + 1}`,
+    });
+  };
+
+  // ============================================
+  // МУЗЫКАЛЬНАЯ СТУДИЯ v3.0.0 (FL Studio Style)
+  // ============================================
+  
+  // Создать новый трек
+  const createTrack = (instrumentId: string) => {
+    const instrument = INSTRUMENTS.find(i => i.id === instrumentId);
+    if (!instrument) return;
+    
+    const newTrack: MusicTrack = {
+      id: `track-${Date.now()}`,
+      name: `${instrument.name} ${musicProject.tracks.length + 1}`,
+      instrument: instrumentId,
+      volume: 80,
+      pan: 0,
+      muted: false,
+      solo: false,
+      patterns: [],
+      color: instrument.color
+    };
+    
+    setMusicProject(prev => ({
+      ...prev,
+      tracks: [...prev.tracks, newTrack]
+    }));
+    
+    toast({
+      title: "🎹 " + (language === 'ru' ? 'Трек создан' : 'Track created'),
+      description: instrument.name,
+    });
+  };
+  
+  // Удалить трек
+  const deleteTrack = (trackId: string) => {
+    setMusicProject(prev => ({
+      ...prev,
+      tracks: prev.tracks.filter(t => t.id !== trackId)
+    }));
+    if (selectedTrack === trackId) {
+      setSelectedTrack(null);
+    }
+  };
+  
+  // Обновить трек
+  const updateTrack = (trackId: string, updates: Partial<MusicTrack>) => {
+    setMusicProject(prev => ({
+      ...prev,
+      tracks: prev.tracks.map(t => t.id === trackId ? { ...t, ...updates } : t)
+    }));
+  };
+  
+  // Создать паттерн для трека
+  const createPattern = (trackId: string, beats: number = 8) => {
+    const track = musicProject.tracks.find(t => t.id === trackId);
+    if (!track) return;
+    
+    const newPattern: MusicPattern = {
+      id: `pattern-${Date.now()}`,
+      name: `Паттерн ${track.patterns.length + 1}`,
+      duration: beats,
+      notes: [],
+      bpm: musicProject.bpm
+    };
+    
+    updateTrack(trackId, {
+      patterns: [...track.patterns, newPattern]
+    });
+    
+    setSelectedPattern(newPattern.id);
+    
+    toast({
+      title: "🎵 " + (language === 'ru' ? 'Паттерн создан' : 'Pattern created'),
+      description: `${beats} beats`,
+    });
+  };
+  
+  // Добавить ноту в паттерн
+  const addNote = (trackId: string, patternId: string, pitch: number, startTime: number, duration: number = 1, velocity: number = 100) => {
+    const track = musicProject.tracks.find(t => t.id === trackId);
+    if (!track) return;
+    
+    const pattern = track.patterns.find(p => p.id === patternId);
+    if (!pattern) return;
+    
+    const newNote: MusicNote = {
+      id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      pitch,
+      startTime,
+      duration,
+      velocity
+    };
+    
+    updateTrack(trackId, {
+      patterns: track.patterns.map(p => 
+        p.id === patternId 
+          ? { ...p, notes: [...p.notes, newNote] }
+          : p
+      )
+    });
+  };
+  
+  // Удалить ноту
+  const deleteNote = (trackId: string, patternId: string, noteId: string) => {
+    const track = musicProject.tracks.find(t => t.id === trackId);
+    if (!track) return;
+    
+    updateTrack(trackId, {
+      patterns: track.patterns.map(p => 
+        p.id === patternId 
+          ? { ...p, notes: p.notes.filter(n => n.id !== noteId) }
+          : p
+      )
+    });
+  };
+  
+  // Применить пресет паттерна
+  const applyPresetPattern = (presetId: string) => {
+    const preset = PRESET_PATTERNS.find(p => p.id === presetId);
+    if (!preset) return;
+    
+    // Создаём треки для каждого инструмента пресета
+    preset.instruments.forEach(instrumentId => {
+      createTrack(instrumentId);
+    });
+    
+    toast({
+      title: "🎵 " + (language === 'ru' ? 'Пресет применён' : 'Preset applied'),
+      description: preset.name,
+    });
+  };
+  
+  // Воспроизведение (симуляция)
+  const togglePlayback = () => {
+    setIsPlaying(!isPlaying);
+    if (!isPlaying) {
+      // Начинаем воспроизведение
+      setPlayPosition(0);
+    }
+  };
+  
+  // Остановка воспроизведения
+  const stopPlayback = () => {
+    setIsPlaying(false);
+    setPlayPosition(0);
+  };
+  
+  // Обновление BPM
+  const updateBPM = (newBpm: number) => {
+    setMusicProject(prev => ({
+      ...prev,
+      bpm: Math.max(40, Math.min(240, newBpm))
+    }));
+  };
+  
+  // Экспорт проекта
+  const exportMusicProject = () => {
+    const projectData = {
+      ...musicProject,
+      exportedAt: new Date().toISOString(),
+      version: '3.0.0'
+    };
+    
+    const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${musicProject.name.replace(/\s+/g, '_')}_music.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "📤 " + (language === 'ru' ? 'Проект экспортирован' : 'Project exported'),
+      description: musicProject.name,
+    });
+  };
+  
+  // Генерация музыки через AI
+  const generateAIMusic = async () => {
+    setIsLoading(true);
+    
+    try {
+      const res = await fetch('/api/work', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generate_music',
+          project: musicProject,
+          style: newProject.style,
+          mood: soundtrackMood
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (data.music) {
+        // Создаём треки на основе AI-генерации
+        data.music.tracks?.forEach((track: any) => {
+          createTrack(track.instrument);
+        });
+        
+        toast({
+          title: "🎵 " + (language === 'ru' ? 'Музыка сгенерирована' : 'Music generated'),
+          description: language === 'ru' ? 'AI создал музыкальную композицию' : 'AI created a musical composition',
+        });
+      }
+    } catch (error) {
+      console.error('Music generation error:', error);
+      // Fallback - создаём демо треки
+      createTrack('piano');
+      createTrack('strings');
+      
+      toast({
+        title: "🎵 " + (language === 'ru' ? 'Демо музыка создана' : 'Demo music created'),
+        description: language === 'ru' ? 'Базовая композиция добавлена' : 'Basic composition added',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // MIDI ноты для пиано-ролла (C3 - C5)
+  const PIANO_KEYS = [
+    { note: 'C5', pitch: 72 }, { note: 'B4', pitch: 71 }, { note: 'A#4', pitch: 70 },
+    { note: 'A4', pitch: 69 }, { note: 'G#4', pitch: 68 }, { note: 'G4', pitch: 67 },
+    { note: 'F#4', pitch: 66 }, { note: 'F4', pitch: 65 }, { note: 'E4', pitch: 64 },
+    { note: 'D#4', pitch: 63 }, { note: 'D4', pitch: 62 }, { note: 'C#4', pitch: 61 },
+    { note: 'C4', pitch: 60 }, { note: 'B3', pitch: 59 }, { note: 'A#3', pitch: 58 },
+    { note: 'A3', pitch: 57 }, { note: 'G#3', pitch: 56 }, { note: 'G3', pitch: 55 },
+    { note: 'F#3', pitch: 54 }, { note: 'F3', pitch: 53 }, { note: 'E3', pitch: 52 },
+    { note: 'D#3', pitch: 51 }, { note: 'D3', pitch: 50 }, { note: 'C3', pitch: 48 },
+  ];
 
   // ============================================
   // AI ГЕНЕРАТОР ИДЕЙ
@@ -3320,6 +3837,24 @@ export default function AnimationStudio() {
                 className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'} disabled:opacity-50`}
               >
                 🎵 {language === 'ru' ? 'Музыка' : 'Music'}
+              </Button>
+              
+              {/* Keyframes Button v3.0.0 */}
+              <Button
+                onClick={() => setShowKeyframeEditor(true)}
+                disabled={!script?.scenes}
+                variant="outline"
+                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'} disabled:opacity-50`}
+              >
+                🎬 {language === 'ru' ? 'Кадры' : 'Keyframes'}
+              </Button>
+              
+              {/* Music Studio Button v3.0.0 */}
+              <Button
+                onClick={() => setShowMusicStudio(true)}
+                className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600"
+              >
+                🎹 {language === 'ru' ? 'Студия' : 'Studio'}
               </Button>
             </div>
           </div>
@@ -6066,6 +6601,701 @@ export default function AnimationStudio() {
         </div>
       )}
 
+      {/* Keyframes Editor Dialog v3.0.0 */}
+      {showKeyframeEditor && script?.scenes && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className={`${isDarkMode ? 'bg-slate-900' : 'bg-white'} rounded-2xl max-w-6xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col`}>
+            {/* Header */}
+            <div className={`flex items-center justify-between p-4 border-b ${isDarkMode ? 'border-white/10' : 'border-purple-200'}`}>
+              <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-purple-900'} flex items-center gap-2`}>
+                🎬 {language === 'ru' ? 'Редактор ключевых кадров' : 'Keyframe Editor'}
+              </h2>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (script?.scenes && selectedSceneIndex !== null) {
+                      autoGenerateKeyframes(selectedSceneIndex);
+                    }
+                  }}
+                  className="text-xs"
+                >
+                  ✨ {language === 'ru' ? 'Авто-генерация' : 'Auto-generate'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowKeyframeEditor(false)}
+                  className={isDarkMode ? 'text-white hover:bg-white/10' : 'text-purple-900 hover:bg-purple-100'}
+                >
+                  ✕
+                </Button>
+              </div>
+            </div>
+            
+            <div className="flex flex-1 overflow-hidden">
+              {/* Scene List */}
+              <div className={`w-64 border-r ${isDarkMode ? 'border-white/10 bg-white/5' : 'border-purple-200 bg-purple-50'} overflow-y-auto`}>
+                <div className="p-2">
+                  <h3 className={`text-xs font-medium mb-2 ${isDarkMode ? 'text-white/60' : 'text-purple-600'}`}>
+                    {language === 'ru' ? 'Сцены' : 'Scenes'}
+                  </h3>
+                  {script.scenes.map((scene: any, i: number) => {
+                    const sceneKeyframes = getKeyframesForScene(i);
+                    return (
+                      <div
+                        key={i}
+                        onClick={() => setSelectedSceneIndex(i)}
+                        className={`p-2 rounded-lg cursor-pointer mb-1 transition-all ${
+                          selectedSceneIndex === i 
+                            ? 'bg-purple-500/20 border border-purple-500/30' 
+                            : isDarkMode 
+                              ? 'hover:bg-white/5 border border-transparent'
+                              : 'hover:bg-purple-100 border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-purple-900'}`}>
+                            {scene.number}. {scene.title}
+                          </span>
+                          {sceneKeyframes.length > 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              {sceneKeyframes.length} 🎬
+                            </Badge>
+                          )}
+                        </div>
+                        <div className={`text-xs ${isDarkMode ? 'text-white/40' : 'text-purple-500'} mt-1`}>
+                          {scene.duration}с
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Keyframes Content */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {selectedSceneIndex !== null && script.scenes[selectedSceneIndex] && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-purple-900'}`}>
+                        {language === 'ru' ? 'Ключевые кадры сцены' : 'Scene Keyframes'}: {script.scenes[selectedSceneIndex].title}
+                      </h3>
+                      <Button
+                        onClick={() => createKeyframe(selectedSceneIndex)}
+                        className="bg-gradient-to-r from-purple-500 to-pink-500"
+                      >
+                        ➕ {language === 'ru' ? 'Добавить кадр' : 'Add Keyframe'}
+                      </Button>
+                    </div>
+                    
+                    {/* Timeline View */}
+                    {getKeyframesForScene(selectedSceneIndex).length > 0 && (
+                      <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-purple-50'} mb-4`}>
+                        <h4 className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-white/60' : 'text-purple-600'}`}>
+                          📊 {language === 'ru' ? 'Таймлайн' : 'Timeline'}
+                        </h4>
+                        <div className="relative h-8 bg-black/20 rounded-lg overflow-hidden">
+                          {getKeyframesForScene(selectedSceneIndex).map((kf, i) => {
+                            const sceneDuration = script.scenes[selectedSceneIndex].duration || 5;
+                            const left = (kf.time / sceneDuration) * 100;
+                            const width = (kf.duration / sceneDuration) * 100;
+                            return (
+                              <div
+                                key={kf.id}
+                                onClick={() => setSelectedKeyframe(kf)}
+                                className={`absolute top-0 h-full cursor-pointer transition-all rounded
+                                  bg-gradient-to-r ${getSceneColor(i)}
+                                  ${selectedKeyframe?.id === kf.id ? 'ring-2 ring-white' : 'hover:opacity-80'}
+                                `}
+                                style={{ left: `${left}%`, width: `${Math.max(width, 5)}%` }}
+                                title={`${kf.title} (${kf.time}s - ${kf.time + kf.duration}s)`}
+                              >
+                                <span className="text-white text-[10px] px-1 truncate block">
+                                  {kf.title}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Keyframes Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {getKeyframesForScene(selectedSceneIndex).map((keyframe, i) => (
+                        <div
+                          key={keyframe.id}
+                          className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                            selectedKeyframe?.id === keyframe.id
+                              ? 'border-purple-500 bg-purple-500/10'
+                              : isDarkMode
+                                ? 'border-white/10 bg-white/5 hover:border-white/30'
+                                : 'border-purple-200 bg-white hover:border-purple-400'
+                          }`}
+                          onClick={() => setSelectedKeyframe(keyframe)}
+                        >
+                          {/* Keyframe Image */}
+                          {keyframe.imageUrl ? (
+                            <img
+                              src={keyframe.imageUrl}
+                              alt={keyframe.title}
+                              className="w-full h-32 object-cover rounded-lg mb-2"
+                            />
+                          ) : (
+                            <div className={`w-full h-32 rounded-lg mb-2 flex items-center justify-center ${
+                              isDarkMode ? 'bg-white/10' : 'bg-purple-100'
+                            }`}>
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  generateKeyframeImage(keyframe);
+                                }}
+                                className="bg-gradient-to-r from-purple-500 to-pink-500"
+                              >
+                                🎨 {language === 'ru' ? 'Генерировать' : 'Generate'}
+                              </Button>
+                            </div>
+                          )}
+                          
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={keyframe.title}
+                              onChange={(e) => updateKeyframe(keyframe.id, { title: e.target.value })}
+                              onClick={(e) => e.stopPropagation()}
+                              className={`w-full text-sm font-medium bg-transparent border-b ${
+                                isDarkMode ? 'border-white/20 text-white' : 'border-purple-200 text-purple-900'
+                              } focus:outline-none focus:border-purple-500`}
+                              placeholder={language === 'ru' ? 'Название кадра' : 'Keyframe title'}
+                            />
+                            
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className={isDarkMode ? 'text-white/60' : 'text-purple-600'}>
+                                ⏱️ {keyframe.time.toFixed(1)}s - {(keyframe.time + keyframe.duration).toFixed(1)}s
+                              </span>
+                              <span className={isDarkMode ? 'text-white/40' : 'text-purple-400'}>
+                                ({keyframe.duration}s)
+                              </span>
+                            </div>
+                            
+                            {/* Camera & Movement */}
+                            <div className="flex gap-2">
+                              <select
+                                value={keyframe.cameraAngle}
+                                onChange={(e) => updateKeyframe(keyframe.id, { cameraAngle: e.target.value })}
+                                onClick={(e) => e.stopPropagation()}
+                                className={`flex-1 text-xs p-1.5 rounded ${
+                                  isDarkMode ? 'bg-white/10 text-white border-white/20' : 'bg-white text-purple-900 border-purple-200'
+                                } border`}
+                              >
+                                {CAMERA_ANGLES.map(angle => (
+                                  <option key={angle.id} value={angle.id}>
+                                    {angle.icon} {language === 'ru' ? angle.name : angle.nameEn}
+                                  </option>
+                                ))}
+                              </select>
+                              
+                              <select
+                                value={keyframe.movement}
+                                onChange={(e) => updateKeyframe(keyframe.id, { movement: e.target.value })}
+                                onClick={(e) => e.stopPropagation()}
+                                className={`flex-1 text-xs p-1.5 rounded ${
+                                  isDarkMode ? 'bg-white/10 text-white border-white/20' : 'bg-white text-purple-900 border-purple-200'
+                                } border`}
+                              >
+                                {MOVEMENT_TYPES.map(move => (
+                                  <option key={move.id} value={move.id}>
+                                    {move.icon} {language === 'ru' ? move.name : move.nameEn}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            
+                            {/* Emotion */}
+                            <div className="flex flex-wrap gap-1">
+                              {EMOTION_TYPES.slice(0, 6).map(emotion => (
+                                <button
+                                  key={emotion.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateKeyframe(keyframe.id, { emotion: emotion.id });
+                                  }}
+                                  className={`text-lg p-1 rounded transition-all ${
+                                    keyframe.emotion === emotion.id
+                                      ? 'bg-purple-500/30 ring-1 ring-purple-500'
+                                      : 'hover:bg-white/10'
+                                  }`}
+                                  title={emotion.name}
+                                >
+                                  {emotion.icon}
+                                </button>
+                              ))}
+                            </div>
+                            
+                            {/* Delete Button */}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteKeyframe(keyframe.id);
+                              }}
+                              className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                            >
+                              🗑️ {language === 'ru' ? 'Удалить' : 'Delete'}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {getKeyframesForScene(selectedSceneIndex).length === 0 && (
+                      <div className={`text-center py-12 ${isDarkMode ? 'text-white/40' : 'text-purple-400'}`}>
+                        <div className="text-4xl mb-4">🎬</div>
+                        <p>{language === 'ru' ? 'Нет ключевых кадров для этой сцены' : 'No keyframes for this scene'}</p>
+                        <p className="text-sm mt-2">
+                          {language === 'ru' ? 'Нажмите "Добавить кадр" или используйте авто-генерацию' : 'Click "Add Keyframe" or use auto-generate'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {selectedSceneIndex === null && (
+                  <div className={`text-center py-12 ${isDarkMode ? 'text-white/40' : 'text-purple-400'}`}>
+                    <div className="text-4xl mb-4">🎥</div>
+                    <p>{language === 'ru' ? 'Выберите сцену для редактирования' : 'Select a scene to edit'}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Music Studio Dialog v3.0.0 (FL Studio Style) */}
+      {showMusicStudio && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-slate-900 via-purple-900/50 to-slate-900 rounded-2xl max-w-7xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col border border-purple-500/20">
+            {/* Header - Transport Bar */}
+            <div className="flex items-center justify-between p-3 bg-black/40 border-b border-white/10">
+              <div className="flex items-center gap-4">
+                <h2 className="text-white font-bold flex items-center gap-2">
+                  🎹 {language === 'ru' ? 'Музыкальная студия' : 'Music Studio'}
+                </h2>
+                
+                {/* BPM Control */}
+                <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-1">
+                  <span className="text-white/60 text-xs">BPM</span>
+                  <input
+                    type="number"
+                    value={musicProject.bpm}
+                    onChange={(e) => updateBPM(parseInt(e.target.value) || 120)}
+                    className="w-16 bg-transparent text-white text-center font-mono focus:outline-none"
+                    min={40}
+                    max={240}
+                  />
+                </div>
+                
+                {/* Key & Time Signature */}
+                <select
+                  value={musicProject.key}
+                  onChange={(e) => setMusicProject(prev => ({ ...prev, key: e.target.value }))}
+                  className="bg-white/5 text-white text-sm px-2 py-1 rounded border border-white/10"
+                >
+                  {MUSICAL_KEYS.map(k => (
+                    <option key={k} value={k}>{k}</option>
+                  ))}
+                </select>
+                
+                <select
+                  value={musicProject.timeSignature}
+                  onChange={(e) => setMusicProject(prev => ({ ...prev, timeSignature: e.target.value }))}
+                  className="bg-white/5 text-white text-sm px-2 py-1 rounded border border-white/10"
+                >
+                  {TIME_SIGNATURES.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Transport Controls */}
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={stopPlayback}
+                  variant="ghost"
+                  className="text-white hover:bg-white/10"
+                >
+                  ⏹️
+                </Button>
+                <Button
+                  onClick={togglePlayback}
+                  className={`w-12 h-12 rounded-full ${isPlaying ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}
+                >
+                  {isPlaying ? '⏸️' : '▶️'}
+                </Button>
+                <Button
+                  onClick={() => setPlayPosition(0)}
+                  variant="ghost"
+                  className="text-white hover:bg-white/10"
+                >
+                  ⏮️
+                </Button>
+                
+                <div className="w-px h-6 bg-white/20 mx-2" />
+                
+                <Button
+                  onClick={generateAIMusic}
+                  disabled={isLoading}
+                  className="bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : '✨'}
+                  {language === 'ru' ? 'AI Музыка' : 'AI Music'}
+                </Button>
+                
+                <Button
+                  onClick={exportMusicProject}
+                  variant="outline"
+                  className="border-white/20 text-white hover:bg-white/10"
+                >
+                  📤 {language === 'ru' ? 'Экспорт' : 'Export'}
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowMusicStudio(false)}
+                  className="text-white hover:bg-white/10"
+                >
+                  ✕
+                </Button>
+              </div>
+            </div>
+            
+            <div className="flex flex-1 overflow-hidden">
+              {/* Left Panel - Track List */}
+              <div className="w-64 bg-black/30 border-r border-white/10 overflow-y-auto">
+                {/* Add Track Button */}
+                <div className="p-2 border-b border-white/10">
+                  <Button
+                    onClick={() => setShowInstrumentSelector(true)}
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500"
+                  >
+                    ➕ {language === 'ru' ? 'Добавить трек' : 'Add Track'}
+                  </Button>
+                </div>
+                
+                {/* Tracks */}
+                <div className="p-2 space-y-1">
+                  {musicProject.tracks.map((track, i) => {
+                    const instrument = INSTRUMENTS.find(inst => inst.id === track.instrument);
+                    return (
+                      <div
+                        key={track.id}
+                        onClick={() => setSelectedTrack(track.id)}
+                        className={`p-2 rounded-lg cursor-pointer transition-all ${
+                          selectedTrack === track.id
+                            ? 'bg-purple-500/20 border border-purple-500/30'
+                            : 'bg-white/5 hover:bg-white/10 border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{instrument?.icon || '🎹'}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-white text-sm font-medium truncate">{track.name}</div>
+                            <div className="text-white/40 text-xs">{track.patterns.length} {language === 'ru' ? 'паттернов' : 'patterns'}</div>
+                          </div>
+                        </div>
+                        
+                        {/* Track Controls */}
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateTrack(track.id, { muted: !track.muted });
+                            }}
+                            className={`px-2 py-0.5 rounded text-xs ${track.muted ? 'bg-red-500/30 text-red-300' : 'bg-white/10 text-white/60'}`}
+                          >
+                            M
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateTrack(track.id, { solo: !track.solo });
+                            }}
+                            className={`px-2 py-0.5 rounded text-xs ${track.solo ? 'bg-yellow-500/30 text-yellow-300' : 'bg-white/10 text-white/60'}`}
+                          >
+                            S
+                          </button>
+                          
+                          {/* Volume Slider */}
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            value={track.volume}
+                            onChange={(e) => updateTrack(track.id, { volume: parseInt(e.target.value) })}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 h-1 accent-purple-500"
+                          />
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteTrack(track.id);
+                            }}
+                            className="text-red-400 hover:text-red-300 text-xs"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {musicProject.tracks.length === 0 && (
+                    <div className="text-center py-8 text-white/40">
+                      <div className="text-3xl mb-2">🎹</div>
+                      <p className="text-sm">{language === 'ru' ? 'Нет треков' : 'No tracks'}</p>
+                      <p className="text-xs mt-1">{language === 'ru' ? 'Добавьте трек для начала' : 'Add a track to begin'}</p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Preset Patterns */}
+                <div className="p-2 border-t border-white/10">
+                  <h4 className="text-xs text-white/60 mb-2">{language === 'ru' ? 'Пресеты' : 'Presets'}</h4>
+                  <div className="space-y-1">
+                    {PRESET_PATTERNS.map(preset => (
+                      <button
+                        key={preset.id}
+                        onClick={() => applyPresetPattern(preset.id)}
+                        className="w-full text-left p-2 rounded bg-white/5 hover:bg-white/10 text-white/80 text-xs flex items-center gap-2"
+                      >
+                        <span>{preset.icon}</span>
+                        <span>{preset.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Main Area - Piano Roll / Timeline */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Timeline / Beat Grid */}
+                <div className="flex-1 overflow-auto bg-black/20 p-4">
+                  {selectedTrack && musicProject.tracks.find(t => t.id === selectedTrack) ? (
+                    <div className="space-y-4">
+                      {/* Pattern Header */}
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-white font-medium">
+                          {musicProject.tracks.find(t => t.id === selectedTrack)?.name} - {language === 'ru' ? 'Паттерны' : 'Patterns'}
+                        </h3>
+                        <Button
+                          size="sm"
+                          onClick={() => createPattern(selectedTrack, 8)}
+                          className="bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
+                        >
+                          ➕ {language === 'ru' ? 'Новый паттерн' : 'New Pattern'}
+                        </Button>
+                      </div>
+                      
+                      {/* Piano Roll */}
+                      {selectedPattern && (
+                        <div className="bg-black/30 rounded-xl p-4 border border-white/10">
+                          <div className="flex">
+                            {/* Piano Keys */}
+                            <div className="w-12 flex-shrink-0">
+                              {PIANO_KEYS.map((key, i) => (
+                                <div
+                                  key={key.pitch}
+                                  className={`h-6 flex items-center justify-end pr-2 text-xs ${
+                                    key.note.includes('#') 
+                                      ? 'bg-gray-800 text-gray-400' 
+                                      : 'bg-gray-700 text-white'
+                                  } border-b border-black/30`}
+                                >
+                                  {key.note}
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Grid */}
+                            <div className="flex-1 overflow-x-auto">
+                              <div className="relative" style={{ width: '400px' }}>
+                                {PIANO_KEYS.map((key, rowIdx) => (
+                                  <div
+                                    key={key.pitch}
+                                    className="flex h-6 border-b border-black/30"
+                                  >
+                                    {[...Array(16)].map((_, colIdx) => {
+                                      const track = musicProject.tracks.find(t => t.id === selectedTrack);
+                                      const pattern = track?.patterns.find(p => p.id === selectedPattern);
+                                      const note = pattern?.notes.find(n => n.pitch === key.pitch && Math.floor(n.startTime) === colIdx);
+                                      
+                                      return (
+                                        <div
+                                          key={colIdx}
+                                          onClick={() => {
+                                            if (selectedTrack && selectedPattern) {
+                                              if (note) {
+                                                deleteNote(selectedTrack, selectedPattern, note.id);
+                                              } else {
+                                                addNote(selectedTrack, selectedPattern, key.pitch, colIdx, 1, 100);
+                                              }
+                                            }
+                                          }}
+                                          className={`w-6 h-6 border-r ${
+                                            colIdx % 4 === 3 ? 'border-white/20' : 'border-white/5'
+                                          } ${
+                                            key.note.includes('#') ? 'bg-gray-800' : 'bg-gray-700/50'
+                                          } ${
+                                            note ? 'bg-purple-500 hover:bg-purple-400' : 'hover:bg-white/10'
+                                          } cursor-pointer transition-colors`}
+                                        />
+                                      );
+                                    })}
+                                  </div>
+                                ))}
+                                
+                                {/* Playhead */}
+                                {isPlaying && (
+                                  <div
+                                    className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10"
+                                    style={{ left: `${(playPosition / 16) * 100}%` }}
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Patterns List */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {musicProject.tracks.find(t => t.id === selectedTrack)?.patterns.map((pattern, i) => (
+                          <div
+                            key={pattern.id}
+                            onClick={() => setSelectedPattern(pattern.id)}
+                            className={`p-3 rounded-lg cursor-pointer transition-all ${
+                              selectedPattern === pattern.id
+                                ? 'bg-purple-500/20 border-2 border-purple-500'
+                                : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                            }`}
+                          >
+                            <div className="text-white font-medium text-sm">{pattern.name}</div>
+                            <div className="text-white/40 text-xs mt-1">
+                              {pattern.duration} beats | {pattern.notes.length} notes
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {musicProject.tracks.find(t => t.id === selectedTrack)?.patterns.length === 0 && (
+                          <div className="col-span-full text-center py-8 text-white/40">
+                            <p>{language === 'ru' ? 'Нет паттернов. Создайте новый!' : 'No patterns. Create one!'}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-16 text-white/40">
+                      <div className="text-6xl mb-4">🎹</div>
+                      <p className="text-lg">{language === 'ru' ? 'Выберите трек для редактирования' : 'Select a track to edit'}</p>
+                      <p className="text-sm mt-2">{language === 'ru' ? 'Или добавьте новый трек из панели слева' : 'Or add a new track from the panel on the left'}</p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Bottom - Arrangement Timeline */}
+                <div className="h-24 bg-black/40 border-t border-white/10 p-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-white/60 text-xs">{language === 'ru' ? 'Аранжировка' : 'Arrangement'}</span>
+                    <div className="flex-1 h-px bg-white/10" />
+                    <span className="text-white/40 text-xs">{musicProject.totalDuration} beats</span>
+                  </div>
+                  
+                  <div className="relative h-12 bg-black/30 rounded-lg overflow-hidden">
+                    {musicProject.tracks.map((track, trackIdx) => {
+                      const instrument = INSTRUMENTS.find(i => i.id === track.instrument);
+                      return track.patterns.map((pattern, patternIdx) => (
+                        <div
+                          key={`${track.id}-${pattern.id}`}
+                          className="absolute h-8 rounded cursor-pointer hover:opacity-80 transition-opacity"
+                          style={{
+                            left: `${(patternIdx * 10) % 80}%`,
+                            top: `${trackIdx * 12}px`,
+                            width: `${Math.min(20, pattern.duration * 2)}%`,
+                            backgroundColor: track.color || instrument?.color || '#8b5cf6'
+                          }}
+                          title={`${track.name}: ${pattern.name}`}
+                        >
+                          <span className="text-white text-[10px] px-1 truncate block">
+                            {instrument?.icon} {pattern.name}
+                          </span>
+                        </div>
+                      ));
+                    })}
+                    
+                    {/* Grid Lines */}
+                    {[...Array(16)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="absolute top-0 bottom-0 w-px bg-white/5"
+                        style={{ left: `${(i / 16) * 100}%` }}
+                      />
+                    ))}
+                    
+                    {/* Playhead */}
+                    <div
+                      className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10"
+                      style={{ left: `${(playPosition / 16) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Instrument Selector Dialog */}
+      {showInstrumentSelector && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-800 rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                🎹 {language === 'ru' ? 'Выбрать инструмент' : 'Select Instrument'}
+              </h2>
+              <Button
+                variant="ghost"
+                onClick={() => setShowInstrumentSelector(false)}
+                className="text-white hover:bg-white/10"
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-2">
+              {INSTRUMENTS.map(instrument => (
+                <button
+                  key={instrument.id}
+                  onClick={() => {
+                    createTrack(instrument.id);
+                    setShowInstrumentSelector(false);
+                  }}
+                  className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/30 transition-all text-left"
+                >
+                  <div className="text-3xl mb-2">{instrument.icon}</div>
+                  <div className="text-white font-medium text-sm">
+                    {language === 'ru' ? instrument.name : instrument.nameEn}
+                  </div>
+                  <div className="text-white/40 text-xs capitalize">{instrument.category}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="text-center py-6 text-white/40 text-sm border-t border-white/5">
         <div className="flex items-center justify-between max-w-7xl mx-auto px-4">
@@ -6075,7 +7305,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v2.9.0
+              v3.0.0
             </span>
           </div>
         </div>
@@ -6084,7 +7314,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.9.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v3.0.0</span>
         </div>
       </div>
     </div>
