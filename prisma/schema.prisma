@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Анимационный проект
+model AnimationProject {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  style       String?  // Ghibli, Disney, Pixar, etc.
+  duration    Int      @default(30) // в секундах
+  status      String   @default("draft") // draft, in_progress, completed, error
+  
+  // Результаты
+  finalVideoUrl String?
+  thumbnailUrl  String?
+  
+  // Настройки Blender
+  blenderScenePath String?
+  useBlender       Boolean @default(false)
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  tasks     AgentTask[]
+  assets    Asset[]
+  scenes    Scene[]
+  logs      ProjectLog[]
+}
+
+// Агент студии
+model Agent {
+  id          String @id @default(cuid())
+  name        String
+  role        String // producer, writer, artist, animator, voice, editor, blender
+  description String?
+  status      String @default("idle") // idle, busy, error
+  config      String? // JSON конфигурация
+  
+  lastActiveAt DateTime?
+  createdAt    DateTime @default(now())
+  
+  tasks AgentTask[]
+}
+
+// Задача агента
+model AgentTask {
+  id          String @id @default(cuid())
+  projectId   String
+  agentId     String
+  parentTaskId String?
+  
+  type        String // write_scenario, generate_image, animate, voice, edit, blender_render
+  title       String
+  description String?
+  input       String? // JSON входные данные
+  output      String? // JSON результат
+  status      String @default("pending") // pending, in_progress, completed, error
+  error       String?
+  priority    Int    @default(5) // 1-10
+  
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  
+  project     AnimationProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  agent       Agent           @relation(fields: [agentId], references: [id])
+  parentTask  AgentTask?      @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
+  subTasks    AgentTask[]     @relation("TaskHierarchy")
+}
+
+// Сцена мультфильма
+model Scene {
+  id          String @id @default(cuid())
+  projectId   String
+  order       Int
+  
+  title       String
+  description String
+  duration    Float @default(5.0) // секунды
+  
+  // Результаты
+  imageUrl    String?
+  videoUrl    String?
+  audioUrl    String?
+  
+  // Blender
+  blenderFile String?
+  cameraPath  String?
+  
+  createdAt   DateTime @default(now())
+  
+  project     AnimationProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// Ресурс (изображение, видео, аудио)
+model Asset {
+  id          String @id @default(cuid())
+  projectId   String
+  type        String // image, video, audio, model3d, script
+  name        String
+  description String?
+  url         String
+  metadata    String? // JSON метаданные
+  
+  createdAt   DateTime @default(now())
+  
+  project     AnimationProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// Лог проекта
+model ProjectLog {
+  id        String @id @default(cuid())
+  projectId String
+  agentId   String?
+  level     String // info, warning, error
+  message   String
+  metadata  String? // JSON
+  
+  createdAt DateTime @default(now())
+  
+  project   AnimationProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// Подключение к Blender (домашний компьютер)
+model BlenderConnection {
+  id            String @id @default(cuid())
+  name          String
+  host          String
+  port          Int    @default(9876)
+  apiKey        String?
+  status        String @default("disconnected") // connected, disconnected, error
+  lastConnected DateTime?
+  createdAt     DateTime @default(now())
+}
+
+// Шаблон персонажа
+model CharacterTemplate {
+  id          String @id @default(cuid())
+  name        String
+  description String
+  stylePrompt String // промпт для генерации
+  referenceImages String? // JSON массив URL
+  createdAt   DateTime @default(now())
+}
