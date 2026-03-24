@@ -133,7 +133,7 @@ export default function AnimationStudio() {
   const [isLoading, setIsLoading] = useState(false);
   
   // Данные студии
-  const [director, setDirector] = useState<Director>({ name: 'Директор', status: 'active', budget: 1000, reputation: 50 });
+  const [director, setDirector] = useState<Director>({ name: 'Директор', status: 'active', budget: 0, reputation: 50 });
   const [hiredAgents, setHiredAgents] = useState<HiredAgent[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -361,8 +361,8 @@ export default function AnimationStudio() {
                 <Wand2 className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">AI Animation Studio</h1>
-                <p className="text-sm text-white/60">Мультиагентная анимационная студия</p>
+                <h1 className="text-2xl font-bold text-white tracking-wider">ФОРТОРИУМ</h1>
+                <p className="text-sm text-white/60">Анимационная студия будущего</p>
               </div>
             </div>
 
@@ -373,8 +373,8 @@ export default function AnimationStudio() {
                 <span className="text-white text-sm font-medium">{director.status === 'active' ? 'Директор онлайн' : 'Директор занят'}</span>
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
-                <span className="text-lg">💰</span>
-                <span className="text-white text-sm font-medium">${director.budget}</span>
+                <span className="text-lg">🎬</span>
+                <span className="text-white text-sm font-medium">{projects.length} проектов</span>
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
                 <span className="text-lg">⭐</span>
@@ -439,8 +439,8 @@ export default function AnimationStudio() {
               <CardContent>
                 <div className="grid grid-cols-3 gap-4 mb-4">
                   <div className="p-3 bg-white/5 rounded-lg">
-                    <div className="text-white/60 text-sm">Бюджет</div>
-                    <div className="text-white text-2xl font-bold">${director.budget}</div>
+                    <div className="text-white/60 text-sm">Проектов</div>
+                    <div className="text-white text-2xl font-bold">{projects.length}</div>
                   </div>
                   <div className="p-3 bg-white/5 rounded-lg">
                     <div className="text-white/60 text-sm">Репутация</div>
@@ -976,7 +976,7 @@ export default function AnimationStudio() {
 
       {/* Footer */}
       <footer className="text-center py-6 text-white/40 text-sm">
-        AI Animation Studio © 2024 | 
+        ФОРТОРИУМ © 2024 | 
         <a href="https://github.com/evikass/fortorium_01" className="text-purple-400 hover:underline ml-1">GitHub</a>
       </footer>
     </div>
