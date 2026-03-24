@@ -193,6 +193,134 @@ export default function AnimationStudio() {
   const [showCandidateDialog, setShowCandidateDialog] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
 
+  // ============================================
+  // ИСТОРИЯ ДЕЙСТВИЙ (UNDO/REDO)
+  // ============================================
+  const [scriptHistory, setScriptHistory] = useState<any[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const MAX_HISTORY = 50;
+
+  // Сохранить состояние в историю
+  const saveToHistory = useCallback((newScript: any) => {
+    if (!newScript) return;
+    
+    setScriptHistory(prev => {
+      const newHistory = [...prev.slice(0, historyIndex + 1), newScript];
+      if (newHistory.length > MAX_HISTORY) {
+        return newHistory.slice(-MAX_HISTORY);
+      }
+      return newHistory;
+    });
+    setHistoryIndex(prev => Math.min(prev + 1, MAX_HISTORY - 1));
+  }, [historyIndex]);
+
+  // Отменить последнее действие
+  const undoScript = useCallback(() => {
+    if (historyIndex > 0) {
+      setHistoryIndex(prev => prev - 1);
+      setScript(scriptHistory[historyIndex - 1]);
+      toast({
+        title: "↩️ Отменено",
+        description: `Возвращено к состоянию ${historyIndex}/${scriptHistory.length}`,
+      });
+    } else {
+      toast({
+        title: "⚠️ Невозможно отменить",
+        description: "Нет предыдущих состояний",
+        variant: "destructive"
+      });
+    }
+  }, [historyIndex, scriptHistory, toast]);
+
+  // Повторить отменённое действие
+  const redoScript = useCallback(() => {
+    if (historyIndex < scriptHistory.length - 1) {
+      setHistoryIndex(prev => prev + 1);
+      setScript(scriptHistory[historyIndex + 1]);
+      toast({
+        title: "↪️ Повторено",
+        description: `Восстановлено состояние ${historyIndex + 2}/${scriptHistory.length}`,
+      });
+    } else {
+      toast({
+        title: "⚠️ Невозможно повторить",
+        description: "Нет следующих состояний",
+        variant: "destructive"
+      });
+    }
+  }, [historyIndex, scriptHistory, toast]);
+
+  // ============================================
+  // ИМПОРТ ПРОЕКТА
+  // ============================================
+  const importProject = async (file: File) => {
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      if (data.script) {
+        setScript(data.script);
+        saveToHistory(data.script);
+        
+        if (data.project) {
+          setNewProject(data.project);
+        }
+        if (data.sceneImages) {
+          setSceneImages(data.sceneImages);
+        }
+        if (data.characterImages) {
+          setCharacterImages(data.characterImages);
+        }
+        if (data.storyboard) {
+          setStoryboard(data.storyboard);
+        }
+        if (data.workResult) {
+          setWorkResult(data.workResult);
+        }
+        
+        toast({
+          title: "📥 Проект импортирован",
+          description: `Загружен: ${data.project?.title || 'Без названия'}`,
+        });
+      } else {
+        throw new Error('Неверный формат файла');
+      }
+    } catch (error) {
+      toast({
+        title: "❌ Ошибка импорта",
+        description: "Не удалось загрузить файл. Проверьте формат.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // ============================================
+  // СТАТИСТИКА ПРОЕКТА
+  // ============================================
+  const getProjectStats = () => {
+    if (!script) return null;
+    
+    const totalScenes = script.scenes?.length || 0;
+    const totalCharacters = script.characters?.length || 0;
+    const totalDuration = script.totalDuration || script.scenes?.reduce((sum: number, s: any) => sum + (s.duration || 0), 0) || 0;
+    const totalDialogue = script.scenes?.reduce((sum: number, s: any) => sum + (s.dialogue?.length || 0), 0) || 0;
+    const generatedImages = Object.keys(sceneImages).length;
+    const generatedCharacters = Object.keys(characterImages).length;
+    
+    const progress = totalScenes > 0 ? Math.round((generatedImages / totalScenes) * 100) : 0;
+    
+    return {
+      totalScenes,
+      totalCharacters,
+      totalDuration,
+      totalDialogue,
+      generatedImages,
+      generatedCharacters,
+      progress,
+      style: ANIMATION_STYLES.find(s => s.value === newProject.style)?.label || newProject.style
+    };
+  };
+
   // Форма нового проекта
   const [newProject, setNewProject] = useState({
     title: '',
@@ -438,6 +566,7 @@ export default function AnimationStudio() {
             writer: data.virtualAgent ? 'AI-Сценарист' : (data.task?.agent?.name || 'AI-Сценарист')
           }
         });
+        saveToHistory(data.script); // Сохраняем в историю
         fetchTasks();
       } else {
         setWorkProgress(`❌ ${data.error}`);
@@ -665,10 +794,11 @@ export default function AnimationStudio() {
     try {
       const parsed = JSON.parse(editedScript);
       setScript(parsed);
+      saveToHistory(parsed); // Сохраняем в историю для Undo
       setEditingScript(false);
       toast({
         title: "✅ Сохранено",
-        description: "Сценарий обновлён",
+        description: "Сценарий обновлён (Ctrl+Z для отмены)",
       });
     } catch {
       toast({
@@ -1014,7 +1144,7 @@ export default function AnimationStudio() {
     
     const interval = setInterval(() => {
       const projectData = {
-        version: '2.1.0',
+        version: '2.2.0',
         savedAt: new Date().toISOString(),
         project: newProject,
         script,
@@ -1030,7 +1160,7 @@ export default function AnimationStudio() {
     }, 60000); // Каждую минуту
     
     return () => clearInterval(interval);
-  }, [autoSaveEnabled, script, newProject, storyboard, sceneImages, characterImages, workResult]);
+  }, [autoSaveEnabled, script, newProject, storyboard, sceneImages, characterImages, workResult, historyIndex]);
 
   // Генерация видео из изображений
   const generateVideo = async () => {
@@ -1133,11 +1263,21 @@ export default function AnimationStudio() {
       if (e.key === 'Escape' && editingScript) {
         setEditingScript(false);
       }
+      // Ctrl/Cmd + Z - Отменить (Undo)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undoScript();
+      }
+      // Ctrl/Cmd + Y или Ctrl/Cmd + Shift + Z - Повторить (Redo)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        redoScript();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [script, editingScript]);
+  }, [script, editingScript, undoScript, redoScript]);
 
   // ============================================
   // ШАБЛОНЫ ПРОЕКТОВ
@@ -2368,6 +2508,88 @@ export default function AnimationStudio() {
                           )}
                         </Button>
                       </div>
+                      
+                      {/* Undo/Redo buttons */}
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={undoScript}
+                          disabled={historyIndex <= 0}
+                          variant="outline"
+                          className="flex-1 border-blue-500/30 text-blue-300 hover:bg-blue-500/10 disabled:opacity-50"
+                        >
+                          ↩️ Отменить (Ctrl+Z)
+                        </Button>
+                        <Button
+                          onClick={redoScript}
+                          disabled={historyIndex >= scriptHistory.length - 1}
+                          variant="outline"
+                          className="flex-1 border-green-500/30 text-green-300 hover:bg-green-500/10 disabled:opacity-50"
+                        >
+                          ↪️ Повторить (Ctrl+Y)
+                        </Button>
+                        <label className="flex-1">
+                          <input
+                            type="file"
+                            accept=".json"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                importProject(file);
+                              }
+                            }}
+                          />
+                          <Button
+                            variant="outline"
+                            className="w-full border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10"
+                            asChild
+                          >
+                            <span>📥 Импорт</span>
+                          </Button>
+                        </label>
+                      </div>
+                      
+                      {/* Statistics Panel */}
+                      {getProjectStats() && (
+                        <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-lg p-4 border border-white/10">
+                          <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+                            📊 Статистика проекта
+                          </h4>
+                          <div className="grid grid-cols-4 gap-4 text-center">
+                            <div className="bg-white/5 rounded-lg p-3">
+                              <div className="text-2xl font-bold text-purple-400">{getProjectStats()?.totalScenes}</div>
+                              <div className="text-xs text-white/60">Сцен</div>
+                            </div>
+                            <div className="bg-white/5 rounded-lg p-3">
+                              <div className="text-2xl font-bold text-pink-400">{getProjectStats()?.totalCharacters}</div>
+                              <div className="text-xs text-white/60">Персонажей</div>
+                            </div>
+                            <div className="bg-white/5 rounded-lg p-3">
+                              <div className="text-2xl font-bold text-cyan-400">{getProjectStats()?.totalDuration}с</div>
+                              <div className="text-xs text-white/60">Длительность</div>
+                            </div>
+                            <div className="bg-white/5 rounded-lg p-3">
+                              <div className="text-2xl font-bold text-amber-400">{getProjectStats()?.totalDialogue}</div>
+                              <div className="text-xs text-white/60">Реплик</div>
+                            </div>
+                          </div>
+                          <div className="mt-3 flex items-center gap-2">
+                            <span className="text-sm text-white/60">Прогресс:</span>
+                            <div className="flex-1 bg-white/10 rounded-full h-2">
+                              <div 
+                                className="bg-gradient-to-r from-green-400 to-emerald-400 h-2 rounded-full transition-all"
+                                style={{ width: `${getProjectStats()?.progress}%` }}
+                              />
+                            </div>
+                            <span className="text-sm text-green-400">{getProjectStats()?.progress}%</span>
+                          </div>
+                          <div className="mt-2 flex justify-between text-xs text-white/40">
+                            <span>Изображений: {getProjectStats()?.generatedImages}/{getProjectStats()?.totalScenes}</span>
+                            <span>Персонажей: {getProjectStats()?.generatedCharacters}/{getProjectStats()?.totalCharacters}</span>
+                            <span>Стиль: {getProjectStats()?.style}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -3039,7 +3261,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v2.1.0
+              v2.2.0
             </span>
           </div>
         </div>
@@ -3048,7 +3270,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.1.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.2.0</span>
         </div>
       </div>
     </div>
