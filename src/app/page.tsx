@@ -48,7 +48,8 @@ import {
   MessageSquare,
   Star,
   Heart,
-  Zap
+  Zap,
+  Search
 } from 'lucide-react';
 
 // Типы
@@ -981,4 +982,4 @@ export default function AnimationStudio() {
     </div>
   );
 }
-// Build trigger: Tue Mar 24 12:34:17 UTC 2026
+

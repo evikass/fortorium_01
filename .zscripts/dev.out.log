@@ -294,3 +294,63 @@ prisma:query SELECT `main`.`AnimationProject`.`id`, `main`.`AnimationProject`.`t
 ✓ Compiled in 272ms
 ⚠ Cross origin request detected from preview-chat-ea45cec0-e645-4060-97d1-dd2bcdf50b01.space.z.ai to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+✓ Compiled in 94ms
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⨯ ReferenceError: Search is not defined
+    at AnimationStudio (src/app/page.tsx:751:85)
+  749 |                   className="w-full bg-gradient-to-r from-blue-500 to-cyan-500"
+  750 |                 >
+> 751 |                   {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+      |                                                                                     ^
+  752 |                   Найти кандидатов
+  753 |                 </Button>
+  754 |               </CardContent> {
+  digest: '1197880083'
+}
+ GET / 500 in 218ms (compile: 52ms, render: 165ms)
+✓ Compiled in 130ms
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET / 200 in 207ms (compile: 57ms, render: 150ms)
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 228ms (compile: 120ms, render: 108ms)
+Failed to make API request: Error: API request failed with status 429: {"error":{"code":"1302","message":"您的账户已达到速率限制，请您控制请求频率"}}
+    at async DirectorAgent.generateDailyReport (src/lib/agents/director-agent.ts:164:22)
+    at async GET (src/app/api/director/route.ts:12:20)
+  162 | 3. Рекомендации на сегодня`;
+  163 |
+> 164 |     const response = await this.zai!.chat.completions.create({
+      |                      ^
+  165 |       messages: [
+  166 |         { role: 'system', content: DIRECTOR_SYSTEM_PROMPT },
+  167 |         { role: 'user', content: prompt }
+Director Error: Error: API request failed with status 429: {"error":{"code":"1302","message":"您的账户已达到速率限制，请您控制请求频率"}}
+    at async DirectorAgent.generateDailyReport (src/lib/agents/director-agent.ts:164:22)
+    at async GET (src/app/api/director/route.ts:12:20)
+  162 | 3. Рекомендации на сегодня`;
+  163 |
+> 164 |     const response = await this.zai!.chat.completions.create({
+      |                      ^
+  165 |       messages: [
+  166 |         { role: 'system', content: DIRECTOR_SYSTEM_PROMPT },
+  167 |         { role: 'user', content: prompt }
+ GET /api/director 500 in 593ms (compile: 266ms, render: 327ms)
+✓ Compiled in 127ms
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 91ms (compile: 2ms, render: 88ms)
+ GET /api/director 200 in 16.1s (compile: 3ms, render: 16.1s)
