@@ -579,8 +579,63 @@ export default function AnimationStudio() {
     fetchDirectorReport();
     fetchPendingCandidates();
     fetchTasks();
+    loadFromLocalStorage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ============================================
+  // ЛОКАЛЬНОЕ ХРАНИЛИЩЕ
+  // ============================================
+  
+  // Сохранение проекта в localStorage
+  const saveToLocalStorage = () => {
+    if (!script) return;
+    
+    const projectData = {
+      version: '1.4.0',
+      savedAt: new Date().toISOString(),
+      project: newProject,
+      script,
+      storyboard,
+      sceneImages,
+      workResult
+    };
+    
+    localStorage.setItem('fortorium_current_project', JSON.stringify(projectData));
+    alert('✅ Проект сохранён в браузере!');
+  };
+  
+  // Загрузка из localStorage
+  const loadFromLocalStorage = () => {
+    try {
+      const saved = localStorage.getItem('fortorium_current_project');
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data.script) {
+          setScript(data.script);
+          setNewProject(data.project || newProject);
+          setStoryboard(data.storyboard);
+          setSceneImages(data.sceneImages || {});
+          setWorkResult(data.workResult);
+          console.log('📂 Проект загружен из localStorage');
+        }
+      }
+    } catch (e) {
+      console.error('Ошибка загрузки из localStorage:', e);
+    }
+  };
+  
+  // Очистка localStorage
+  const clearLocalStorage = () => {
+    if (confirm('Удалить сохранённый проект?')) {
+      localStorage.removeItem('fortorium_current_project');
+      setScript(null);
+      setStoryboard(null);
+      setSceneImages({});
+      setWorkResult(null);
+      alert('🗑️ Проект удалён из браузера');
+    }
+  };
 
   // Загрузка кандидатов на утверждение
   const fetchPendingCandidates = async () => {
@@ -1502,30 +1557,48 @@ export default function AnimationStudio() {
 
                   {/* Export & Video Actions */}
                   {script && (
-                    <div className="flex gap-2 pt-4 border-t border-white/10">
-                      <Button
-                        onClick={exportProject}
-                        variant="outline"
-                        className="flex-1 border-green-500/30 text-green-300 hover:bg-green-500/10"
-                      >
-                        📥 Экспорт JSON
-                      </Button>
-                      <Button
-                        onClick={generateVideo}
-                        disabled={generatingVideo || Object.keys(sceneImages).length === 0}
-                        className="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
-                      >
-                        {generatingVideo ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Создаём видео...
-                          </>
-                        ) : (
-                          <>
-                            🎬 Создать видео
-                          </>
-                        )}
-                      </Button>
+                    <div className="space-y-2 pt-4 border-t border-white/10">
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={saveToLocalStorage}
+                          variant="outline"
+                          className="flex-1 border-blue-500/30 text-blue-300 hover:bg-blue-500/10"
+                        >
+                          💾 Сохранить в браузере
+                        </Button>
+                        <Button
+                          onClick={exportProject}
+                          variant="outline"
+                          className="flex-1 border-green-500/30 text-green-300 hover:bg-green-500/10"
+                        >
+                          📥 Экспорт JSON
+                        </Button>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={clearLocalStorage}
+                          variant="outline"
+                          className="flex-1 border-red-500/30 text-red-300 hover:bg-red-500/10"
+                        >
+                          🗑️ Очистить
+                        </Button>
+                        <Button
+                          onClick={generateVideo}
+                          disabled={generatingVideo || Object.keys(sceneImages).length === 0}
+                          className="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+                        >
+                          {generatingVideo ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Создаём видео...
+                            </>
+                          ) : (
+                            <>
+                              🎬 Создать видео
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   )}
 
@@ -1996,7 +2069,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v1.3.0
+              v1.4.0
             </span>
           </div>
         </div>
@@ -2005,7 +2078,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v1.3.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v1.4.0</span>
         </div>
       </div>
     </div>
