@@ -722,6 +722,7 @@ export default function AnimationStudio() {
       script,
       storyboard,
       sceneImages,
+      characterImages,
       animation: workResult?.animation,
       agents: workResult?.agents
     };
@@ -733,6 +734,225 @@ export default function AnimationStudio() {
     a.download = `fortorium_${newProject.title.replace(/\s+/g, '_')}_${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // Экспорт сценария в документ (для печати/PDF)
+  const exportScriptDocument = () => {
+    if (!script) {
+      toast({
+        title: "⚠️ Нет данных",
+        description: "Сначала создайте сценарий",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const styleName = ANIMATION_STYLES.find(s => s.value === newProject.style)?.label || newProject.style;
+    
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>${script.title} - Сценарий | ФОРТОРИУМ</title>
+  <style>
+    @page { margin: 2cm; }
+    body { 
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 12pt;
+      line-height: 1.6;
+      color: #1a1a1a;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 { 
+      font-size: 24pt;
+      text-align: center;
+      border-bottom: 2px solid #333;
+      padding-bottom: 10px;
+      margin-bottom: 5px;
+    }
+    .subtitle {
+      text-align: center;
+      font-style: italic;
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .meta {
+      background: #f5f5f5;
+      padding: 15px;
+      margin-bottom: 30px;
+      border-radius: 5px;
+    }
+    .meta-row { margin: 5px 0; }
+    .meta-label { font-weight: bold; }
+    h2 {
+      font-size: 16pt;
+      margin-top: 30px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+    }
+    .character-card {
+      background: #fafafa;
+      padding: 10px 15px;
+      margin: 10px 0;
+      border-left: 3px solid #6366f1;
+    }
+    .character-name { font-weight: bold; font-size: 14pt; }
+    .character-desc { font-style: italic; color: #555; }
+    .character-traits { color: #888; font-size: 10pt; }
+    .scene {
+      margin: 25px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      page-break-inside: avoid;
+    }
+    .scene-header {
+      font-size: 14pt;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .scene-location {
+      font-style: italic;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .scene-description {
+      margin-bottom: 15px;
+    }
+    .dialogue {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+    .dialogue-character {
+      font-weight: bold;
+      color: #6366f1;
+    }
+    .dialogue-line {
+      font-style: italic;
+    }
+    .action {
+      color: #555;
+      font-style: italic;
+      margin-top: 10px;
+      padding: 5px 10px;
+      background: #f9f9f9;
+    }
+    .footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 10pt;
+      color: #888;
+      border-top: 1px solid #ddd;
+      padding-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎬 ${script.title}</h1>
+  <div class="subtitle">${script.logline || ''}</div>
+  
+  <div class="meta">
+    <div class="meta-row"><span class="meta-label">Стиль:</span> ${styleName}</div>
+    <div class="meta-row"><span class="meta-label">Длительность:</span> ${script.totalDuration || 30} секунд</div>
+    <div class="meta-row"><span class="meta-label">Настроение:</span> ${script.mood || 'Не указано'}</div>
+    <div class="meta-row"><span class="meta-label">Создано:</span> ${new Date().toLocaleDateString('ru-RU')}</div>
+  </div>
+  
+  <h2>👥 Персонажи (${script.characters?.length || 0})</h2>
+  ${script.characters?.map((c: any) => `
+    <div class="character-card">
+      <div class="character-name">${c.name}</div>
+      <div class="character-desc">${c.description || ''}</div>
+      ${c.traits?.length ? `<div class="character-traits">Черты: ${c.traits.join(', ')}</div>` : ''}
+    </div>
+  `).join('') || '<p>Персонажи не определены</p>'}
+  
+  <h2>📝 Сценарий (${script.scenes?.length || 0} сцен)</h2>
+  ${script.scenes?.map((scene: any) => `
+    <div class="scene">
+      <div class="scene-header">Сцена ${scene.number}: ${scene.title}</div>
+      <div class="scene-location">📍 ${scene.location || 'Локация не указана'} | ⏱️ ${scene.duration || 5}с</div>
+      <div class="scene-description">${scene.description || ''}</div>
+      ${scene.dialogue?.length ? `
+        <div class="dialogues">
+          ${scene.dialogue.map((d: any) => `
+            <div class="dialogue">
+              <span class="dialogue-character">${d.character}:</span>
+              <span class="dialogue-line">"${d.line}"</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+      ${scene.action ? `<div class="action">🎬 ${scene.action}</div>` : ''}
+    </div>
+  `).join('') || '<p>Сцены не определены</p>'}
+  
+  <div class="footer">
+    Создано в <strong>ФОРТОРИУМ</strong> — Анимационная студия будущего<br>
+    https://fortorium-01.vercel.app
+  </div>
+</body>
+</html>`;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+      toast({
+        title: "📄 Документ создан",
+        description: "Используйте Ctrl+P для сохранения в PDF",
+      });
+    }
+  };
+
+  // Копировать сценарий в буфер обмена
+  const copyScriptToClipboard = () => {
+    if (!script) return;
+    
+    const styleName = ANIMATION_STYLES.find(s => s.value === newProject.style)?.label || newProject.style;
+    
+    let text = `🎬 ${script.title}\n${script.logline || ''}\n\n`;
+    text += `Стиль: ${styleName}\nДлительность: ${script.totalDuration || 30}с\nНастроение: ${script.mood || ''}\n\n`;
+    
+    if (script.characters?.length) {
+      text += `👥 ПЕРСОНАЖИ:\n`;
+      script.characters.forEach((c: any) => {
+        text += `• ${c.name} — ${c.description || ''}\n`;
+      });
+      text += '\n';
+    }
+    
+    if (script.scenes?.length) {
+      text += `📝 СЦЕНАРИЙ:\n\n`;
+      script.scenes.forEach((scene: any) => {
+        text += `--- Сцена ${scene.number}: ${scene.title} ---\n`;
+        text += `📍 ${scene.location || ''} | ⏱️ ${scene.duration || 5}с\n`;
+        text += `${scene.description || ''}\n`;
+        if (scene.dialogue?.length) {
+          scene.dialogue.forEach((d: any) => {
+            text += `${d.character}: "${d.line}"\n`;
+          });
+        }
+        text += '\n';
+      });
+    }
+    
+    text += `\nСоздано в ФОРТОРИУМ — https://fortorium-01.vercel.app`;
+    
+    navigator.clipboard.writeText(text).then(() => {
+      toast({
+        title: "📋 Скопировано",
+        description: "Сценарий скопирован в буфер обмена",
+      });
+    });
   };
 
   // Генерация видео из изображений
@@ -900,7 +1120,7 @@ export default function AnimationStudio() {
     if (!script) return;
     
     const projectData = {
-      version: '1.9.0',
+      version: '2.0.0',
       savedAt: new Date().toISOString(),
       project: newProject,
       script,
@@ -2006,23 +2226,39 @@ export default function AnimationStudio() {
                   {/* Export & Video Actions */}
                   {script && (
                     <div className="space-y-2 pt-4 border-t border-white/10">
+                      {/* Export buttons row 1 */}
                       <div className="flex gap-2">
                         <Button
                           onClick={saveToLocalStorage}
                           variant="outline"
                           className="flex-1 border-blue-500/30 text-blue-300 hover:bg-blue-500/10"
                         >
-                          💾 Сохранить в браузере
+                          💾 Сохранить
                         </Button>
                         <Button
                           onClick={exportProject}
                           variant="outline"
                           className="flex-1 border-green-500/30 text-green-300 hover:bg-green-500/10"
                         >
-                          📥 Экспорт JSON
+                          📥 JSON
+                        </Button>
+                        <Button
+                          onClick={exportScriptDocument}
+                          variant="outline"
+                          className="flex-1 border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+                        >
+                          📄 Печать/PDF
                         </Button>
                       </div>
+                      {/* Export buttons row 2 */}
                       <div className="flex gap-2">
+                        <Button
+                          onClick={copyScriptToClipboard}
+                          variant="outline"
+                          className="flex-1 border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
+                        >
+                          📋 Копировать
+                        </Button>
                         <Button
                           onClick={clearLocalStorage}
                           variant="outline"
@@ -2038,11 +2274,11 @@ export default function AnimationStudio() {
                           {generatingVideo ? (
                             <>
                               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Создаём видео...
+                              Создаём...
                             </>
                           ) : (
                             <>
-                              🎬 Создать видео
+                              🎬 Видео
                             </>
                           )}
                         </Button>
@@ -2621,7 +2857,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v1.9.0
+              v2.0.0
             </span>
           </div>
         </div>
@@ -2630,7 +2866,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v1.9.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.0.0</span>
         </div>
       </div>
     </div>
