@@ -191,6 +191,94 @@ export default function AnimationStudio() {
     experienceLevel: 'any'
   });
 
+  // ============================================
+  // ДЕМО-РЕЖИМ
+  // ============================================
+  const loadDemoProject = () => {
+    const demoScript = {
+      title: "Кот-астронавт",
+      logline: "Отважный кот по имени Мурзик мечтает полететь на Луну и находит неожиданного союзника в лице мудрой совы.",
+      mood: "Вдохновляющий и весёлый",
+      characters: [
+        { name: "Мурзик", description: "Отважный рыжий кот с большими мечтами", traits: ["смелый", "любознательный", "находчивый"] },
+        { name: "Сова Афина", description: "Мудрая наставница с секретами космоса", traits: ["мудрая", "загадочная", "добрая"] },
+        { name: "Космический Мышь", description: "Весёлый помощник на станции", traits: ["забавный", "технически подкованный"] }
+      ],
+      scenes: [
+        {
+          number: 1,
+          title: "Мечты под звёздами",
+          location: "Крыша дома Мурзика",
+          description: "Ночной сад, яркие звёзды. Мурзик смотрит на Луну с крыши своего дома, мечтая о космическом путешествии.",
+          dialogue: [
+            { character: "Мурзик", line: "Однажды я полечу туда... к этим сверкающим огням!" },
+            { character: "Мурзик", line: "Каждый шаг приближает меня к мечте." }
+          ],
+          action: "Кот смотрит на звёздное небо, его глаза полны решимости. Камера плавно поднимается к Луне.",
+          duration: 8
+        },
+        {
+          number: 2,
+          title: "Мудрый совет",
+          location: "Старый дуб в парке",
+          description: "Мурзик встречает Сову Афину, которая рассказывает ему о секретном космическом проекте.",
+          dialogue: [
+            { character: "Сова Афина", line: "Я вижу в твоих глазах огонь, юный путешественник." },
+            { character: "Мурзик", line: "Я мечтаю полететь на Луну! Но как?" },
+            { character: "Сова Афина", line: "Есть место... Космическая станция на холме. Они ищут смельчаков." }
+          ],
+          action: "Сова таинственно перебирает перья, свет луны создаёт магическую атмосферу.",
+          duration: 10
+        },
+        {
+          number: 3,
+          title: "Космическая тренировка",
+          location: "Секретная космическая станция",
+          description: "Мурзик проходит необычные тренировки с Космическим Мышью.",
+          dialogue: [
+            { character: "Космический Мышь", line: "Добро пожаловать, кадет! Готов к невесомости?" },
+            { character: "Мурзик", line: "Это невероятно! Я готов ко всему!" },
+            { character: "Космический Мышь", line: "Тогда пристегни усы - мы взлетаем!" }
+          ],
+          action: "Смешные сцены тренировок в невесомости, кот пытается поймать летающие игрушки.",
+          duration: 8
+        },
+        {
+          number: 4,
+          title: "Путь к звёздам",
+          location: "В космосе / Луна",
+          description: "Мурзик в скафандре смотрит на Землю из иллюминатора, затем ступает на поверхность Луны.",
+          dialogue: [
+            { character: "Мурзик", line: "Смотри, Афина! Я сделал это! Я на Луне!" },
+            { character: "Мурзик", line: "Мечты сбываются, если верить и действовать!" }
+          ],
+          action: "Эпичный кадр кота на Луне с Землёй на горизонте. Медленные прыжки в низкой гравитации.",
+          duration: 6
+        }
+      ],
+      totalDuration: 32
+    };
+
+    setNewProject({
+      title: "Кот-астронавт",
+      description: "Отважный кот мечтает полететь на Луну и находит неожиданных друзей",
+      style: 'pixar',
+      duration: 32
+    });
+    
+    setScript(demoScript);
+    setWorkResult({
+      agents: {
+        writer: 'AI-Сценарист',
+        artist: null,
+        animator: null
+      }
+    });
+    
+    setSceneImages({});
+    setStoryboard(null);
+  };
+
   // Загрузка данных
   const fetchStudioData = useCallback(async () => {
     try {
@@ -592,7 +680,7 @@ export default function AnimationStudio() {
     if (!script) return;
     
     const projectData = {
-      version: '1.5.0',
+      version: '1.6.0',
       savedAt: new Date().toISOString(),
       project: newProject,
       script,
@@ -1222,6 +1310,13 @@ export default function AnimationStudio() {
 
                 <div className="flex justify-end gap-2 flex-wrap">
                   <Button
+                    onClick={loadDemoProject}
+                    variant="outline"
+                    className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+                  >
+                    🎭 Демо
+                  </Button>
+                  <Button
                     onClick={runWriter}
                     disabled={isLoading || !newProject.title || !newProject.description}
                     variant="outline"
@@ -1318,9 +1413,47 @@ export default function AnimationStudio() {
                         Результаты работы AI-агентов
                       </CardDescription>
                     </div>
+                    {/* Pipeline Status */}
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${script ? 'bg-green-500' : 'bg-gray-500'}`} title="Сценарий" />
+                      <div className={`w-3 h-3 rounded-full ${Object.keys(sceneImages).length > 0 ? 'bg-green-500' : 'bg-gray-500'}`} title="Изображения" />
+                      <div className={`w-3 h-3 rounded-full ${workResult?.animation ? 'bg-green-500' : 'bg-gray-500'}`} title="Анимация" />
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Pipeline Progress Bar */}
+                  {script && (
+                    <div className="p-3 bg-white/5 rounded-lg">
+                      <div className="flex items-center justify-between text-xs mb-2">
+                        <span className="text-white/60">Прогресс производства</span>
+                        <span className="text-white font-medium">
+                          {Math.round(
+                            (script ? 25 : 0) +
+                            (Object.keys(sceneImages).length > 0 ? 35 : 0) +
+                            (workResult?.animation ? 25 : 0) +
+                            (projectVideo ? 15 : 0)
+                          )}%
+                        </span>
+                      </div>
+                      <Progress 
+                        value={
+                          (script ? 25 : 0) +
+                          (Object.keys(sceneImages).length > 0 ? 35 : 0) +
+                          (workResult?.animation ? 25 : 0) +
+                          (projectVideo ? 15 : 0)
+                        } 
+                        className="h-2"
+                      />
+                      <div className="flex justify-between mt-2 text-xs text-white/40">
+                        <span className={script ? 'text-green-400' : ''}>✍️ Сценарий</span>
+                        <span className={Object.keys(sceneImages).length > 0 ? 'text-green-400' : ''}>🎨 Изображения</span>
+                        <span className={workResult?.animation ? 'text-green-400' : ''}>🎬 Анимация</span>
+                        <span className={projectVideo ? 'text-green-400' : ''}>🎥 Видео</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Progress */}
                   {workProgress && (
                     <div className="p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-400 text-sm flex items-center gap-2">
@@ -2165,7 +2298,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v1.5.0
+              v1.6.0
             </span>
           </div>
         </div>
@@ -2174,7 +2307,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v1.5.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v1.6.0</span>
         </div>
       </div>
     </div>
