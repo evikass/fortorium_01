@@ -161,6 +161,14 @@ export default function AnimationStudio() {
   const [sceneImages, setSceneImages] = useState<Record<number, any>>({});
   const [generatingScene, setGeneratingScene] = useState<number | null>(null);
   
+  // Изображения персонажей
+  const [characterImages, setCharacterImages] = useState<Record<string, any>>({});
+  const [generatingCharacter, setGeneratingCharacter] = useState<string | null>(null);
+  
+  // Режим редактирования сценария
+  const [editingScript, setEditingScript] = useState(false);
+  const [editedScript, setEditedScript] = useState<string>('');
+  
   // Озвучка
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [audioEnabled, setAudioEnabled] = useState(false);
@@ -565,6 +573,104 @@ export default function AnimationStudio() {
     setTimeout(() => setWorkProgress(''), 3000);
   };
 
+  // Генерация изображения персонажа
+  const generateCharacterImage = async (characterName: string, characterDescription: string) => {
+    if (!characterName || !characterDescription) return;
+    
+    setGeneratingCharacter(characterName);
+    
+    try {
+      const stylePrompts: Record<string, string> = {
+        ghibli: 'Studio Ghibli style, Miyazaki, anime character design',
+        disney: 'Disney animation style, classic character design',
+        pixar: 'Pixar 3D style, modern 3D character',
+        anime: 'Anime style, Japanese animation character',
+        cartoon: 'Modern cartoon style, stylized character'
+      };
+      
+      const stylePrompt = stylePrompts[newProject.style] || stylePrompts.disney;
+      const imagePrompt = `${stylePrompt}, character portrait of ${characterName}, ${characterDescription}, expressive face, professional character design, high quality`;
+      
+      const res = await fetch('/api/work', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_storyboard',
+          projectId: projects[0]?.id || 'default',
+          data: {
+            sceneTitle: `Персонаж: ${characterName}`,
+            sceneDescription: imagePrompt,
+            style: newProject.style
+          }
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success && data.image?.imageUrl) {
+        setCharacterImages(prev => ({
+          ...prev,
+          [characterName]: data.image
+        }));
+        toast({
+          title: "🎨 Персонаж создан",
+          description: `Изображение ${characterName} готово!`,
+        });
+      }
+    } catch (error) {
+      console.error('Error generating character image:', error);
+      toast({
+        title: "❌ Ошибка",
+        description: "Не удалось создать изображение персонажа",
+        variant: "destructive"
+      });
+    } finally {
+      setGeneratingCharacter(null);
+    }
+  };
+
+  // Генерация всех персонажей
+  const generateAllCharacterImages = async () => {
+    if (!script?.characters) return;
+    
+    setIsLoading(true);
+    setWorkProgress('🎨 Генерация персонажей...');
+    
+    for (let i = 0; i < script.characters.length; i++) {
+      const char = script.characters[i];
+      setWorkProgress(`🎨 Генерация персонажа ${i + 1}/${script.characters.length}: ${char.name}`);
+      await generateCharacterImage(char.name, char.description);
+    }
+    
+    setWorkProgress('✅ Все персонажи созданы!');
+    setIsLoading(false);
+    setTimeout(() => setWorkProgress(''), 3000);
+  };
+
+  // Редактирование сценария
+  const startEditingScript = () => {
+    setEditedScript(JSON.stringify(script, null, 2));
+    setEditingScript(true);
+  };
+
+  const saveEditedScript = () => {
+    try {
+      const parsed = JSON.parse(editedScript);
+      setScript(parsed);
+      setEditingScript(false);
+      toast({
+        title: "✅ Сохранено",
+        description: "Сценарий обновлён",
+      });
+    } catch {
+      toast({
+        title: "❌ Ошибка",
+        description: "Неверный формат JSON",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Озвучка текста через TTS
   const playDialogue = async (text: string, character: string) => {
     if (playingAudio) {
@@ -698,12 +804,13 @@ export default function AnimationStudio() {
     if (!script) return;
     
     const projectData = {
-      version: '1.7.0',
+      version: '1.8.0',
       savedAt: new Date().toISOString(),
       project: newProject,
       script,
       storyboard,
       sceneImages,
+      characterImages,
       workResult
     };
     
@@ -1510,15 +1617,63 @@ export default function AnimationStudio() {
                       </h4>
                       <p className="text-white/80 text-sm mb-3">{script.logline}</p>
                       
-                      {/* Characters */}
+                      {/* Characters with Images */}
                       {script.characters?.length > 0 && (
-                        <div className="mb-3">
-                          <h5 className="text-white/60 text-xs mb-2">Персонажи:</h5>
-                          <div className="flex flex-wrap gap-2">
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="text-white/60 text-xs">Персонажи ({script.characters.length}):</h5>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={generateAllCharacterImages}
+                              disabled={isLoading || generatingCharacter !== null}
+                              className="h-6 text-xs border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+                            >
+                              🎨 Создать всех
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                             {script.characters.map((c: any, i: number) => (
-                              <Badge key={i} variant="outline" className="border-amber-500/30 text-amber-300">
-                                {c.name}
-                              </Badge>
+                              <div 
+                                key={i} 
+                                className="p-2 bg-white/5 rounded-lg border border-white/10 flex items-center gap-2"
+                              >
+                                {characterImages[c.name]?.imageUrl ? (
+                                  <img 
+                                    src={characterImages[c.name].imageUrl}
+                                    alt={c.name}
+                                    className="w-10 h-10 rounded-full object-cover border-2 border-amber-500/30"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-lg">
+                                    {generatingCharacter === c.name ? (
+                                      <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                                    ) : (
+                                      '🎭'
+                                    )}
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-white text-sm font-medium truncate">{c.name}</div>
+                                  <div className="text-white/40 text-xs truncate">{c.traits?.[0] || 'Персонаж'}</div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => generateCharacterImage(c.name, c.description)}
+                                  disabled={generatingCharacter !== null}
+                                  className="h-8 w-8 p-0"
+                                  title="Сгенерировать изображение"
+                                >
+                                  {generatingCharacter === c.name ? (
+                                    <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
+                                  ) : characterImages[c.name]?.imageUrl ? (
+                                    <CheckCircle className="w-3 h-3 text-green-400" />
+                                  ) : (
+                                    <Palette className="w-3 h-3 text-white/40" />
+                                  )}
+                                </Button>
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -2340,7 +2495,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v1.7.0
+              v1.8.0
             </span>
           </div>
         </div>
@@ -2349,7 +2504,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v1.7.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v1.8.0</span>
         </div>
       </div>
     </div>
