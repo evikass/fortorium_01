@@ -1988,10 +1988,26 @@ export default function AnimationStudio() {
       </Dialog>
 
       {/* Footer */}
-      <footer className="text-center py-6 text-white/40 text-sm">
-        ФОРТОРИУМ © 2024 | 
-        <a href="https://github.com/evikass/fortorium_01" className="text-purple-400 hover:underline ml-1">GitHub</a>
+      <footer className="text-center py-6 text-white/40 text-sm border-t border-white/5">
+        <div className="flex items-center justify-between max-w-7xl mx-auto px-4">
+          <div>
+            ФОРТОРИУМ © 2024 | 
+            <a href="https://github.com/evikass/fortorium_01" className="text-purple-400 hover:underline ml-1">GitHub</a>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
+              v1.3.0
+            </span>
+          </div>
+        </div>
       </footer>
+
+      {/* Version Badge - Fixed Bottom Right */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v1.3.0</span>
+        </div>
+      </div>
     </div>
   );
 }
