@@ -139,6 +139,10 @@ export default function AnimationStudio() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [agentTypes, setAgentTypes] = useState<AgentType[]>([]);
   
+  // Кандидаты на утверждение
+  const [pendingCandidates, setPendingCandidates] = useState<Candidate[]>([]);
+  const [actionMessage, setActionMessage] = useState<string>('');
+  
   // Модальные окна
   const [showHireDialog, setShowHireDialog] = useState(false);
   const [showCandidateDialog, setShowCandidateDialog] = useState(false);
@@ -197,7 +201,74 @@ export default function AnimationStudio() {
   useEffect(() => {
     fetchStudioData();
     fetchDirectorReport();
-  }, [fetchStudioData, fetchDirectorReport]);
+    fetchPendingCandidates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Загрузка кандидатов на утверждение
+  const fetchPendingCandidates = async () => {
+    try {
+      const res = await fetch('/api/candidates');
+      const data = await res.json();
+      if (data.success) {
+        setPendingCandidates(data.candidates);
+      }
+    } catch (error) {
+      console.error('Error fetching pending candidates:', error);
+    }
+  };
+
+  // Утвердить кандидата
+  const approveCandidate = async (candidateId: string) => {
+    setIsLoading(true);
+    setActionMessage('');
+    try {
+      const res = await fetch('/api/candidates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidateId, action: 'approve' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionMessage(data.message);
+        setPendingCandidates(prev => prev.filter(c => c.id !== candidateId));
+        if (data.agent) {
+          setHiredAgents(prev => [...prev, { ...data.agent, avatarEmoji: '🤖', level: 1, description: '' }]);
+        }
+        setTimeout(() => setActionMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error approving candidate:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Отклонить кандидата
+  const rejectCandidate = async (candidateId: string) => {
+    setIsLoading(true);
+    setActionMessage('');
+    try {
+      const res = await fetch('/api/candidates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidateId, action: 'reject' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionMessage(data.message);
+        setPendingCandidates(prev => prev.filter(c => c.id !== candidateId));
+        if (data.newCandidate) {
+          setPendingCandidates(prev => [...prev, data.newCandidate]);
+        }
+        setTimeout(() => setActionMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error rejecting candidate:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Инициализация БД
   const initDatabase = async () => {
@@ -509,6 +580,74 @@ export default function AnimationStudio() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Pending Candidates - Кандидаты на утверждение */}
+            {pendingCandidates.length > 0 && (
+              <Card className="bg-white/5 border-white/10 border-2 border-amber-500/30">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 flex items-center justify-center text-2xl">
+                      📋
+                    </div>
+                    <div className="flex-1">
+                      <CardTitle className="text-white text-lg">Кандидаты на утверждение</CardTitle>
+                      <CardDescription className="text-white/60">
+                        HR нашёл {pendingCandidates.length} кандидатов. Примите решение.
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {actionMessage && (
+                    <div className="mb-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-sm">
+                      {actionMessage}
+                    </div>
+                  )}
+                  <div className="space-y-3">
+                    {pendingCandidates.map(candidate => (
+                      <div key={candidate.id} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
+                        <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl">
+                          {candidate.avatarEmoji}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-medium">{candidate.name}</span>
+                            <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-400">
+                              {candidate.role}
+                            </Badge>
+                            <span className="text-yellow-400 text-xs flex items-center gap-1">
+                              <Star className="w-3 h-3" /> {candidate.rating}
+                            </span>
+                          </div>
+                          <div className="text-white/60 text-xs">{candidate.description}</div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => approveCandidate(candidate.id)}
+                            disabled={isLoading}
+                            className="bg-green-500 hover:bg-green-600 text-white"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Принять
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => rejectCandidate(candidate.id)}
+                            disabled={isLoading}
+                            className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                          >
+                            <XCircle className="w-4 h-4 mr-1" />
+                            Отклонить
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* New Project Form */}
             <Card className="bg-white/5 border-white/10">

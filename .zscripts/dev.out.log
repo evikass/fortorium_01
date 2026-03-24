@@ -414,3 +414,129 @@ Director Error: Error: API request failed with status 429: {"error":{"code":"130
   166 |         { role: 'system', content: DIRECTOR_SYSTEM_PROMPT },
   167 |         { role: 'user', content: prompt }
  GET /api/director 500 in 267ms (compile: 1521µs, render: 266ms)
+ GET / 200 in 65ms (compile: 44ms, render: 21ms)
+ GET / 200 in 12ms (compile: 1739µs, render: 10ms)
+ GET / 200 in 12ms (compile: 1729µs, render: 10ms)
+ GET / 200 in 16ms (compile: 2ms, render: 14ms)
+ GET / 200 in 17ms (compile: 2ms, render: 15ms)
+ GET / 200 in 16ms (compile: 2ms, render: 14ms)
+ GET / 200 in 17ms (compile: 2ms, render: 15ms)
+ GET / 200 in 17ms (compile: 2ms, render: 15ms)
+ GET / 200 in 22ms (compile: 2ms, render: 20ms)
+ GET / 200 in 12ms (compile: 1846µs, render: 10ms)
+ GET / 200 in 30ms (compile: 3ms, render: 27ms)
+ GET / 200 in 13ms (compile: 1918µs, render: 11ms)
+ GET / 200 in 12ms (compile: 1657µs, render: 10ms)
+ GET / 200 in 11ms (compile: 1520µs, render: 10ms)
+ GET / 200 in 12ms (compile: 1709µs, render: 10ms)
+ GET / 200 in 12ms (compile: 1694µs, render: 10ms)
+ GET / 200 in 12ms (compile: 2ms, render: 10ms)
+ GET / 200 in 15ms (compile: 1408µs, render: 14ms)
+ GET / 200 in 17ms (compile: 2ms, render: 15ms)
+ GET / 200 in 15ms (compile: 2ms, render: 13ms)
+ GET / 200 in 11ms (compile: 1500µs, render: 9ms)
+ GET / 200 in 16ms (compile: 1511µs, render: 14ms)
+✓ Compiled in 122ms
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 75ms (compile: 24ms, render: 51ms)
+ GET /api/director 200 in 7.8s (compile: 24ms, render: 7.8s)
+✓ Compiled in 120ms
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 63ms (compile: 3ms, render: 61ms)
+Error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/candidates/route.ts:73:43)
+  71 |   try {
+  72 |     // Проверяем pending кандидатов
+> 73 |     let pending = await db.agentCandidate.findMany({
+     |                                           ^
+  74 |       where: { status: 'pending' },
+  75 |       orderBy: { createdAt: 'desc' },
+  76 |       take: 10
+ GET /api/candidates 500 in 172ms (compile: 127ms, render: 46ms)
+ GET /api/director 200 in 4.4s (compile: 1282µs, render: 4.4s)
+✓ Compiled in 166ms
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 88ms (compile: 2ms, render: 85ms)
+Error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/candidates/route.ts:73:43)
+  71 |   try {
+  72 |     // Проверяем pending кандидатов
+> 73 |     let pending = await db.agentCandidate.findMany({
+     |                                           ^
+  74 |       where: { status: 'pending' },
+  75 |       orderBy: { createdAt: 'desc' },
+  76 |       take: 10
+ GET /api/candidates 500 in 65ms (compile: 1290µs, render: 64ms)
+✓ Compiled in 123ms
+ GET /api/director 200 in 9.8s (compile: 2ms, render: 9.8s)
+✓ Compiled in 122ms
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 78ms (compile: 6ms, render: 72ms)
+ GET / 200 in 292ms (compile: 47ms, render: 245ms)
+ GET /api/director 200 in 1354ms (compile: 3ms, render: 1351ms)
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 48ms (compile: 1928µs, render: 46ms)
+✓ Compiled in 121ms
+Error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/candidates/route.ts:73:43)
+  71 |   try {
+  72 |     // Проверяем pending кандидатов
+> 73 |     let pending = await db.agentCandidate.findMany({
+     |                                           ^
+  74 |       where: { status: 'pending' },
+  75 |       orderBy: { createdAt: 'desc' },
+  76 |       take: 10
+ GET /api/candidates 500 in 69ms (compile: 1832µs, render: 67ms)
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 42ms (compile: 1191µs, render: 41ms)
+ GET /api/director 200 in 10.9s (compile: 1978µs, render: 10.9s)
+ GET /api/director 200 in 17.1s (compile: 2ms, render: 17.1s)

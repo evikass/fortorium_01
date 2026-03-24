@@ -75,6 +75,7 @@ export async function GET() {
         "role" TEXT NOT NULL,
         "description" TEXT NOT NULL,
         "skills" TEXT NOT NULL,
+        "specializations" TEXT,
         "style" TEXT,
         "experience" TEXT,
         "portfolioUrl" TEXT,
@@ -84,6 +85,9 @@ export async function GET() {
         "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
+
+    // Добавляем колонку specializations если её нет
+    try { await prisma.$executeRaw`ALTER TABLE "AgentCandidate" ADD COLUMN "specializations" TEXT`; } catch (e) { /* уже есть */ }
 
     await prisma.$executeRaw`
       CREATE TABLE IF NOT EXISTS "HireRequest" (

@@ -107,6 +107,7 @@ model AgentCandidate {
   
   // Навыки и опыт
   skills          String   // JSON массив
+  specializations String?  // JSON массив специализаций
   style           String?  // предпочитаемый стиль
   experience      String?  // описание опыта
   portfolioUrl    String?
