@@ -197,6 +197,32 @@ const SOUNDTRACK_MOODS_CONFIG = [
   { value: 'peaceful', labelRu: 'Спокойная', labelEn: 'Peaceful', icon: '🌿', descRu: 'Мягкая, расслабляющая', descEn: 'Soft, relaxing' },
 ];
 
+// ============================================
+// СИСТЕМА ГОЛОСОВ ДЛЯ ПЕРСОНАЖЕЙ (v2.9.0)
+// ============================================
+const VOICE_TYPES = [
+  { id: 'narrator', name: 'Рассказчик', nameEn: 'Narrator', icon: '🎙️', pitch: 'medium', speed: 1.0, description: 'Нейтральный, спокойный голос' },
+  { id: 'hero', name: 'Герой', nameEn: 'Hero', icon: '🦸', pitch: 'low', speed: 1.0, description: 'Уверенный, мужественный голос' },
+  { id: 'heroine', name: 'Героиня', nameEn: 'Heroine', icon: '👸', pitch: 'high', speed: 1.0, description: 'Мягкий, женственный голос' },
+  { id: 'child', name: 'Ребёнок', nameEn: 'Child', icon: '👶', pitch: 'high', speed: 1.2, description: 'Высокий, живой голос' },
+  { id: 'elder', name: 'Старец', nameEn: 'Elder', icon: '👴', pitch: 'low', speed: 0.85, description: 'Мудрый, медленный голос' },
+  { id: 'villain', name: 'Злодей', nameEn: 'Villain', icon: '😈', pitch: 'low', speed: 0.9, description: 'Тёмный, зловещий голос' },
+  { id: 'fairy', name: 'Фея', nameEn: 'Fairy', icon: '🧚', pitch: 'high', speed: 1.1, description: 'Волшебный, нежный голос' },
+  { id: 'robot', name: 'Робот', nameEn: 'Robot', icon: '🤖', pitch: 'medium', speed: 1.0, description: 'Синтетический, механический голос' },
+  { id: 'creature', name: 'Существо', nameEn: 'Creature', icon: '🐲', pitch: 'medium', speed: 0.95, description: 'Необычный, сказочный голос' },
+  { id: 'comedian', name: 'Комик', nameEn: 'Comedian', icon: '🤡', pitch: 'medium', speed: 1.15, description: 'Весёлый, энергичный голос' },
+];
+
+// Типы отношений между персонажами
+const RELATIONSHIP_TYPES = [
+  { id: 'friend', name: 'Друг', nameEn: 'Friend', icon: '🤝', color: '#4ade80' },
+  { id: 'family', name: 'Семья', nameEn: 'Family', icon: '👨‍👩‍👧', color: '#f472b6' },
+  { id: 'rival', name: 'Соперник', nameEn: 'Rival', icon: '⚔️', color: '#fb923c' },
+  { id: 'mentor', name: 'Наставник', nameEn: 'Mentor', icon: '📚', color: '#60a5fa' },
+  { id: 'love', name: 'Любовь', nameEn: 'Love', icon: '❤️', color: '#ef4444' },
+  { id: 'enemy', name: 'Враг', nameEn: 'Enemy', icon: '💀', color: '#6b7280' },
+];
+
 // Жанры для генератора идей
 const GENRES = [
   { value: 'adventure', label: 'Приключение', icon: '🗺️' },
@@ -506,6 +532,34 @@ export default function AnimationStudio() {
   
   // Проекты для сохранения
   const [savedProjects, setSavedProjects] = useState<any[]>([]);
+  
+  // ============================================
+  // НОВЫЕ ФУНКЦИИ v2.9.0
+  // ============================================
+  
+  // Голоса персонажей (mapping character name -> voice type id)
+  const [characterVoices, setCharacterVoices] = useState<Record<string, string>>({});
+  const [showVoiceSelector, setShowVoiceSelector] = useState(false);
+  const [selectedCharacterForVoice, setSelectedCharacterForVoice] = useState<string | null>(null);
+  
+  // Отношения между персонажами
+  const [characterRelations, setCharacterRelations] = useState<Array<{
+    character1: string;
+    character2: string;
+    type: string;
+  }>>([]);
+  const [showRelationEditor, setShowRelationEditor] = useState(false);
+  
+  // Пакетные операции со сценами
+  const [selectedScenes, setSelectedScenes] = useState<Set<number>>(new Set());
+  const [showBatchEditDialog, setShowBatchEditDialog] = useState(false);
+  const [batchDuration, setBatchDuration] = useState<number>(5);
+  
+  // Визуальный таймлайн
+  const [showVisualTimeline, setShowVisualTimeline] = useState(true);
+  
+  // Статистика проекта
+  const [showProjectStats, setShowProjectStats] = useState(false);
   
   // Модальные окна
   const [showHireDialog, setShowHireDialog] = useState(false);
@@ -1018,6 +1072,228 @@ export default function AnimationStudio() {
     } catch (error) {
       console.error('Voice preview error:', error);
     }
+  };
+
+  // ============================================
+  // СИСТЕМА ГОЛОСОВ v2.9.0
+  // ============================================
+  
+  // Установить голос персонажу
+  const setCharacterVoice = (characterName: string, voiceId: string) => {
+    setCharacterVoices(prev => ({
+      ...prev,
+      [characterName]: voiceId
+    }));
+    const voiceType = VOICE_TYPES.find(v => v.id === voiceId);
+    toast({
+      title: "🎙️ " + (language === 'ru' ? 'Голос установлен' : 'Voice set'),
+      description: `${characterName}: ${voiceType?.name || voiceId}`,
+    });
+  };
+  
+  // Получить голос персонажа
+  const getCharacterVoice = (characterName: string) => {
+    return characterVoices[characterName] || 'narrator';
+  };
+  
+  // Озвучить реплику с выбранным голосом
+  const speakWithCharacterVoice = async (characterName: string, text: string) => {
+    const voiceId = getCharacterVoice(characterName);
+    const voiceType = VOICE_TYPES.find(v => v.id === voiceId);
+    
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          text, 
+          character: characterName,
+          voiceType: voiceId,
+          pitch: voiceType?.pitch,
+          speed: voiceType?.speed
+        })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.audioUrl) {
+          const audio = new Audio(data.audioUrl);
+          audio.play();
+        }
+      }
+    } catch (error) {
+      console.error('TTS error:', error);
+    }
+  };
+
+  // ============================================
+  // ОТНОШЕНИЯ ПЕРСОНАЖЕЙ v2.9.0
+  // ============================================
+  
+  // Добавить отношение между персонажами
+  const addCharacterRelation = (char1: string, char2: string, type: string) => {
+    // Проверяем, нет ли уже такого отношения
+    const exists = characterRelations.some(
+      r => (r.character1 === char1 && r.character2 === char2) ||
+           (r.character1 === char2 && r.character2 === char1)
+    );
+    
+    if (!exists) {
+      setCharacterRelations(prev => [...prev, { character1: char1, character2: char2, type }]);
+      toast({
+        title: "🔗 " + (language === 'ru' ? 'Отношение добавлено' : 'Relation added'),
+        description: `${char1} ↔ ${char2}`,
+      });
+    }
+  };
+  
+  // Удалить отношение
+  const removeCharacterRelation = (char1: string, char2: string) => {
+    setCharacterRelations(prev => prev.filter(
+      r => !((r.character1 === char1 && r.character2 === char2) ||
+             (r.character1 === char2 && r.character2 === char1))
+    ));
+  };
+  
+  // Получить отношения персонажа
+  const getCharacterRelations = (characterName: string) => {
+    return characterRelations.filter(
+      r => r.character1 === characterName || r.character2 === characterName
+    );
+  };
+
+  // ============================================
+  // ПАКЕТНЫЕ ОПЕРАЦИИ СО СЦЕНАМИ v2.9.0
+  // ============================================
+  
+  // Переключить выбор сцены
+  const toggleSceneSelection = (sceneIndex: number) => {
+    setSelectedScenes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sceneIndex)) {
+        newSet.delete(sceneIndex);
+      } else {
+        newSet.add(sceneIndex);
+      }
+      return newSet;
+    });
+  };
+  
+  // Выбрать все сцены
+  const selectAllScenes = () => {
+    if (script?.scenes) {
+      setSelectedScenes(new Set(script.scenes.map((_: any, i: number) => i)));
+    }
+  };
+  
+  // Снять выбор со всех сцен
+  const deselectAllScenes = () => {
+    setSelectedScenes(new Set());
+  };
+  
+  // Пакетное изменение длительности выбранных сцен
+  const batchUpdateSceneDuration = (duration: number) => {
+    if (!script?.scenes || selectedScenes.size === 0) return;
+    
+    const newScenes = script.scenes.map((scene: any, index: number) => {
+      if (selectedScenes.has(index)) {
+        return { ...scene, duration };
+      }
+      return scene;
+    });
+    
+    setScript({
+      ...script,
+      scenes: newScenes,
+      totalDuration: newScenes.reduce((sum: number, s: any) => sum + (s.duration || 0), 0)
+    });
+    
+    saveToHistory({ ...script, scenes: newScenes });
+    
+    toast({
+      title: "⏱️ " + (language === 'ru' ? 'Длительность изменена' : 'Duration updated'),
+      description: language === 'ru' 
+        ? `Обновлено ${selectedScenes.size} сцен` 
+        : `Updated ${selectedScenes.size} scenes`,
+    });
+    
+    setShowBatchEditDialog(false);
+  };
+  
+  // Пакетная генерация изображений для выбранных сцен
+  const batchGenerateSceneImages = async () => {
+    if (!script?.scenes || selectedScenes.size === 0) return;
+    
+    setIsLoading(true);
+    
+    for (const index of selectedScenes) {
+      setWorkProgress(`🎨 ${language === 'ru' ? 'Генерация' : 'Generating'} ${index + 1}/${script.scenes.length}...`);
+      await generateSceneImage(index);
+    }
+    
+    setWorkProgress('✅ ' + (language === 'ru' ? 'Готово!' : 'Done!'));
+    setIsLoading(false);
+    setTimeout(() => setWorkProgress(''), 2000);
+  };
+  
+  // Удалить выбранные сцены
+  const batchDeleteScenes = () => {
+    if (!script?.scenes || selectedScenes.size === 0) return;
+    
+    const sortedIndexes = Array.from(selectedScenes).sort((a, b) => b - a);
+    const newScenes = [...script.scenes];
+    
+    for (const index of sortedIndexes) {
+      newScenes.splice(index, 1);
+    }
+    
+    // Перенумеровываем сцены
+    newScenes.forEach((scene, idx) => {
+      scene.number = idx + 1;
+    });
+    
+    setScript({
+      ...script,
+      scenes: newScenes,
+      totalDuration: newScenes.reduce((sum: number, s: any) => sum + (s.duration || 0), 0)
+    });
+    
+    saveToHistory({ ...script, scenes: newScenes });
+    setSelectedScenes(new Set());
+    
+    toast({
+      title: "🗑️ " + (language === 'ru' ? 'Сцены удалены' : 'Scenes deleted'),
+      description: language === 'ru' 
+        ? `Удалено ${sortedIndexes.length} сцен` 
+        : `Deleted ${sortedIndexes.length} scenes`,
+    });
+  };
+
+  // ============================================
+  // ВИЗУАЛЬНЫЙ ТАЙМЛАЙН v2.9.0
+  // ============================================
+  
+  // Рассчитать ширину сцены для таймлайна
+  const getSceneTimelineWidth = (duration: number, totalDuration: number) => {
+    const minWidth = 50; // минимальная ширина в пикселях
+    const maxWidth = 300; // максимальная ширина
+    const baseWidth = (duration / totalDuration) * 100; // процент от общей ширины
+    return Math.max(minWidth, Math.min(maxWidth, baseWidth * 5));
+  };
+  
+  // Получить цвет для сцены на таймлайне
+  const getSceneColor = (index: number) => {
+    const colors = [
+      'from-purple-500 to-pink-500',
+      'from-blue-500 to-cyan-500',
+      'from-green-500 to-emerald-500',
+      'from-orange-500 to-amber-500',
+      'from-red-500 to-rose-500',
+      'from-indigo-500 to-violet-500',
+      'from-teal-500 to-green-500',
+      'from-pink-500 to-rose-500',
+    ];
+    return colors[index % colors.length];
   };
 
   // ============================================
@@ -3603,18 +3879,30 @@ export default function AnimationStudio() {
                         <div className="mb-4">
                           <div className="flex items-center justify-between mb-2">
                             <h5 className="text-white/60 text-xs">Персонажи ({script.characters.length}):</h5>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={generateAllCharacterImages}
-                              disabled={isLoading || generatingCharacter !== null}
-                              className="h-6 text-xs border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
-                            >
-                              🎨 Создать всех
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setShowRelationEditor(true)}
+                                className="h-6 text-xs border-pink-500/30 text-pink-300 hover:bg-pink-500/10"
+                              >
+                                🔗 Отношения
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={generateAllCharacterImages}
+                                disabled={isLoading || generatingCharacter !== null}
+                                className="h-6 text-xs border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+                              >
+                                🎨 Создать всех
+                              </Button>
+                            </div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                            {script.characters.map((c: any, i: number) => (
+                            {script.characters.map((c: any, i: number) => {
+                              const currentVoice = VOICE_TYPES.find(v => v.id === getCharacterVoice(c.name));
+                              return (
                               <div 
                                 key={i} 
                                 className="p-2 bg-white/5 rounded-lg border border-white/10 flex items-center gap-2"
@@ -3636,8 +3924,20 @@ export default function AnimationStudio() {
                                 )}
                                 <div className="flex-1 min-w-0">
                                   <div className="text-white text-sm font-medium truncate">{c.name}</div>
-                                  <div className="text-white/40 text-xs truncate">{c.traits?.[0] || 'Персонаж'}</div>
+                                  <div className="text-white/40 text-xs truncate">
+                                    {currentVoice?.icon} {currentVoice?.name || 'Рассказчик'}
+                                  </div>
                                 </div>
+                                {/* Voice Selection Button v2.9.0 */}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => { setSelectedCharacterForVoice(c.name); setShowVoiceSelector(true); }}
+                                  className="h-8 w-8 p-0 hover:bg-purple-500/20"
+                                  title={language === 'ru' ? 'Выбрать голос' : 'Select voice'}
+                                >
+                                  🎙️
+                                </Button>
                                 {/* Voice Preview Button */}
                                 <Button
                                   size="sm"
@@ -3665,7 +3965,7 @@ export default function AnimationStudio() {
                                   )}
                                 </Button>
                               </div>
-                            ))}
+                            );})}
                           </div>
                         </div>
                       )}
@@ -3675,22 +3975,119 @@ export default function AnimationStudio() {
                         <div className="space-y-3 mt-4">
                           <div className="flex items-center justify-between">
                             <h5 className="text-white/60 text-xs">Сцены ({script.scenes.length}):</h5>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={generateAllSceneImages}
-                              disabled={isLoading || !script?.scenes}
-                              className="h-6 text-xs border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
-                            >
-                              🎨 Сгенерировать все изображения
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              {/* Batch Operations */}
+                              {selectedScenes.size > 0 && (
+                                <>
+                                  <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-300">
+                                    Выбрано: {selectedScenes.size}
+                                  </Badge>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setShowBatchEditDialog(true)}
+                                    className="h-6 text-xs border-blue-500/30 text-blue-300 hover:bg-blue-500/10"
+                                  >
+                                    ⏱️ Изменить время
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={batchGenerateSceneImages}
+                                    disabled={isLoading}
+                                    className="h-6 text-xs border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
+                                  >
+                                    🎨 Генерировать
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={batchDeleteScenes}
+                                    className="h-6 text-xs border-red-500/30 text-red-300 hover:bg-red-500/10"
+                                  >
+                                    🗑️ Удалить
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={selectedScenes.size > 0 ? deselectAllScenes : selectAllScenes}
+                                className="h-6 text-xs border-white/20 text-white/60 hover:bg-white/10"
+                              >
+                                {selectedScenes.size > 0 ? '✖ Снять выбор' : '✓ Выбрать все'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={generateAllSceneImages}
+                                disabled={isLoading || !script?.scenes}
+                                className="h-6 text-xs border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
+                              >
+                                🎨 Сгенерировать все
+                              </Button>
+                            </div>
                           </div>
+                          
+                          {/* Visual Timeline v2.9.0 */}
+                          {showVisualTimeline && script.scenes.length > 0 && (
+                            <div className="p-3 bg-white/5 rounded-lg border border-white/10">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-white/60 text-xs">📊 Визуальный таймлайн</span>
+                                <span className="text-white/40 text-xs">
+                                  {script.totalDuration || script.scenes.reduce((s: number, sc: any) => s + (sc.duration || 0), 0)}с
+                                </span>
+                              </div>
+                              <div className="flex gap-1 overflow-x-auto pb-2">
+                                {script.scenes.map((scene: any, i: number) => {
+                                  const totalDur = script.totalDuration || script.scenes.reduce((s: number, sc: any) => s + (sc.duration || 0), 0);
+                                  const width = getSceneTimelineWidth(scene.duration || 5, totalDur);
+                                  const isSelected = selectedScenes.has(i);
+                                  
+                                  return (
+                                    <div
+                                      key={i}
+                                      onClick={() => toggleSceneSelection(i)}
+                                      className={`relative flex-shrink-0 h-12 rounded-lg cursor-pointer transition-all
+                                        bg-gradient-to-r ${getSceneColor(i)} 
+                                        ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900' : 'opacity-80 hover:opacity-100'}
+                                      `}
+                                      style={{ width: `${width}px` }}
+                                      title={`Сцена ${scene.number}: ${scene.title} (${scene.duration}с)`}
+                                    >
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <span className="text-white text-xs font-bold drop-shadow-lg">
+                                          {scene.number}
+                                        </span>
+                                      </div>
+                                      <div className="absolute bottom-0 left-0 right-0 bg-black/30 px-1 py-0.5 rounded-b-lg">
+                                        <span className="text-white/80 text-[10px]">{scene.duration}с</span>
+                                      </div>
+                                      {sceneImages[i]?.imageUrl && (
+                                        <div className="absolute top-1 right-1 w-2 h-2 bg-green-400 rounded-full" />
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          
                           {script.scenes.map((scene: any, i: number) => (
-                            <div key={i} className="p-3 bg-white/5 rounded-lg border border-white/10">
+                            <div key={i} className={`p-3 bg-white/5 rounded-lg border ${selectedScenes.has(i) ? 'border-amber-500/50 bg-amber-500/5' : 'border-white/10'}`}>
                               <div className="flex items-start justify-between mb-2">
-                                <div>
-                                  <span className="text-white font-medium text-sm">Сцена {scene.number}:</span>{' '}
-                                  <span className="text-amber-300">{scene.title}</span>
+                                <div className="flex items-center gap-2">
+                                  {/* Scene Selection Checkbox */}
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedScenes.has(i)}
+                                    onChange={() => toggleSceneSelection(i)}
+                                    className="w-4 h-4 rounded border-white/20 bg-white/5"
+                                  />
+                                  <div>
+                                    <span className="text-white font-medium text-sm">Сцена {scene.number}:</span>{' '}
+                                    <span className="text-amber-300">{scene.title}</span>
+                                  </div>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <Badge variant="outline" className="text-xs border-white/20 text-white/60">
@@ -5453,6 +5850,222 @@ export default function AnimationStudio() {
         </div>
       )}
 
+      {/* Voice Selector Dialog v2.9.0 */}
+      {showVoiceSelector && selectedCharacterForVoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl`}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-purple-900'} flex items-center gap-2`}>
+                🎙️ {language === 'ru' ? 'Выбор голоса' : 'Voice Selection'}
+              </h2>
+              <Button
+                variant="ghost"
+                onClick={() => { setShowVoiceSelector(false); setSelectedCharacterForVoice(null); }}
+                className={`${isDarkMode ? 'text-white hover:bg-white/10' : 'text-purple-900 hover:bg-purple-100'}`}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <p className={`${isDarkMode ? 'text-white/60' : 'text-purple-600'} mb-4`}>
+              {language === 'ru' ? `Выберите голос для ${selectedCharacterForVoice}:` : `Select voice for ${selectedCharacterForVoice}:`}
+            </p>
+            
+            <div className="grid grid-cols-2 gap-2">
+              {VOICE_TYPES.map(voice => (
+                <button
+                  key={voice.id}
+                  onClick={() => {
+                    setCharacterVoice(selectedCharacterForVoice, voice.id);
+                    setShowVoiceSelector(false);
+                    setSelectedCharacterForVoice(null);
+                  }}
+                  className={`p-3 rounded-xl border-2 transition-all text-left ${
+                    characterVoices[selectedCharacterForVoice] === voice.id
+                      ? 'border-purple-500 bg-purple-500/10'
+                      : isDarkMode
+                        ? 'border-white/10 hover:border-white/30 hover:bg-white/5'
+                        : 'border-purple-200 hover:border-purple-400 hover:bg-purple-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{voice.icon}</span>
+                    <div>
+                      <div className={`font-semibold ${isDarkMode ? 'text-white' : 'text-purple-900'}`}>
+                        {language === 'ru' ? voice.name : voice.nameEn}
+                      </div>
+                      <div className={`text-xs ${isDarkMode ? 'text-white/60' : 'text-purple-600'}`}>
+                        {voice.description}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Character Relations Dialog v2.9.0 */}
+      {showRelationEditor && script?.characters && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl max-h-[80vh] overflow-y-auto`}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-purple-900'} flex items-center gap-2`}>
+                🔗 {language === 'ru' ? 'Отношения персонажей' : 'Character Relations'}
+              </h2>
+              <Button
+                variant="ghost"
+                onClick={() => setShowRelationEditor(false)}
+                className={`${isDarkMode ? 'text-white hover:bg-white/10' : 'text-purple-900 hover:bg-purple-100'}`}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            {/* Current Relations */}
+            {characterRelations.length > 0 && (
+              <div className="mb-6">
+                <h3 className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-white/80' : 'text-purple-800'}`}>
+                  {language === 'ru' ? 'Текущие отношения:' : 'Current relations:'}
+                </h3>
+                <div className="space-y-2">
+                  {characterRelations.map((rel, i) => {
+                    const relType = RELATIONSHIP_TYPES.find(r => r.id === rel.type);
+                    return (
+                      <div key={i} className={`flex items-center justify-between p-2 rounded-lg ${isDarkMode ? 'bg-white/5' : 'bg-purple-50'}`}>
+                        <div className="flex items-center gap-2">
+                          <span className={isDarkMode ? 'text-white' : 'text-purple-900'}>{rel.character1}</span>
+                          <span>{relType?.icon || '🔗'}</span>
+                          <span className={isDarkMode ? 'text-white' : 'text-purple-900'}>{rel.character2}</span>
+                          <Badge variant="outline" style={{ borderColor: relType?.color, color: relType?.color }}>
+                            {language === 'ru' ? relType?.name : relType?.nameEn}
+                          </Badge>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeCharacterRelation(rel.character1, rel.character2)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* Add New Relation */}
+            <div className="space-y-4">
+              <h3 className={`text-sm font-medium ${isDarkMode ? 'text-white/80' : 'text-purple-800'}`}>
+                {language === 'ru' ? 'Добавить отношение:' : 'Add relation:'}
+              </h3>
+              
+              <div className="grid grid-cols-3 gap-2 items-center">
+                <select 
+                  id="char1-select"
+                  className={`p-2 rounded-lg ${isDarkMode ? 'bg-white/10 text-white border-white/20' : 'bg-white text-purple-900 border-purple-200'} border`}
+                >
+                  {script.characters.map((c: any) => (
+                    <option key={c.name} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+                
+                <select 
+                  id="relation-type-select"
+                  className={`p-2 rounded-lg ${isDarkMode ? 'bg-white/10 text-white border-white/20' : 'bg-white text-purple-900 border-purple-200'} border`}
+                >
+                  {RELATIONSHIP_TYPES.map(r => (
+                    <option key={r.id} value={r.id}>{r.icon} {language === 'ru' ? r.name : r.nameEn}</option>
+                  ))}
+                </select>
+                
+                <select 
+                  id="char2-select"
+                  className={`p-2 rounded-lg ${isDarkMode ? 'bg-white/10 text-white border-white/20' : 'bg-white text-purple-900 border-purple-200'} border`}
+                >
+                  {script.characters.map((c: any) => (
+                    <option key={c.name} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <Button
+                onClick={() => {
+                  const char1 = (document.getElementById('char1-select') as HTMLSelectElement)?.value;
+                  const char2 = (document.getElementById('char2-select') as HTMLSelectElement)?.value;
+                  const type = (document.getElementById('relation-type-select') as HTMLSelectElement)?.value;
+                  if (char1 && char2 && type && char1 !== char2) {
+                    addCharacterRelation(char1, char2, type);
+                  }
+                }}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500"
+              >
+                ➕ {language === 'ru' ? 'Добавить отношение' : 'Add Relation'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Edit Duration Dialog v2.9.0 */}
+      {showBatchEditDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl`}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-purple-900'} flex items-center gap-2`}>
+                ⏱️ {language === 'ru' ? 'Изменить длительность' : 'Change Duration'}
+              </h2>
+              <Button
+                variant="ghost"
+                onClick={() => setShowBatchEditDialog(false)}
+                className={`${isDarkMode ? 'text-white hover:bg-white/10' : 'text-purple-900 hover:bg-purple-100'}`}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <p className={`${isDarkMode ? 'text-white/60' : 'text-purple-600'} mb-4`}>
+              {language === 'ru' 
+                ? `Изменить длительность для ${selectedScenes.size} выбранных сцен:` 
+                : `Change duration for ${selectedScenes.size} selected scenes:`}
+            </p>
+            
+            <div className="flex items-center gap-4 mb-6">
+              <Input
+                type="number"
+                min={1}
+                max={60}
+                value={batchDuration}
+                onChange={(e) => setBatchDuration(parseInt(e.target.value) || 5)}
+                className={`${isDarkMode ? 'bg-white/10 border-white/20 text-white' : 'bg-white border-purple-200 text-purple-900'}`}
+              />
+              <span className={isDarkMode ? 'text-white/60' : 'text-purple-600'}>
+                {language === 'ru' ? 'секунд' : 'seconds'}
+              </span>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowBatchEditDialog(false)}
+                variant="outline"
+                className="flex-1"
+              >
+                {language === 'ru' ? 'Отмена' : 'Cancel'}
+              </Button>
+              <Button
+                onClick={() => batchUpdateSceneDuration(batchDuration)}
+                className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500"
+              >
+                ✅ {language === 'ru' ? 'Применить' : 'Apply'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="text-center py-6 text-white/40 text-sm border-t border-white/5">
         <div className="flex items-center justify-between max-w-7xl mx-auto px-4">
@@ -5462,7 +6075,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v2.8.0
+              v2.9.0
             </span>
           </div>
         </div>
@@ -5471,7 +6084,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.8.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.9.0</span>
         </div>
       </div>
     </div>
