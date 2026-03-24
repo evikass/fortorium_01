@@ -26,6 +26,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   Film, 
   Palette, 
@@ -3711,398 +3718,285 @@ export default function AnimationStudio() {
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' : 'bg-gradient-to-br from-slate-100 via-purple-100 to-slate-200'}`}>
-      {/* Header */}
-      <header className={`border-b ${isDarkMode ? 'border-white/10 bg-black/20' : 'border-purple-200 bg-white/60'} backdrop-blur-sm`}>
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+      {/* Header - Compact Design */}
+      <header className={`border-b ${isDarkMode ? 'border-white/10 bg-black/30' : 'border-purple-200 bg-white/70'} backdrop-blur-md sticky top-0 z-40`}>
+        <div className="max-w-7xl mx-auto px-4">
+          {/* Main Header Row */}
+          <div className="flex items-center justify-between h-14">
+            {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
-                <Wand2 className="w-8 h-8 text-white" />
+              <div className="p-1.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+                <Wand2 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-purple-900'} tracking-wider`}>ФОРТОРИУМ</h1>
-                <p className={`text-sm ${isDarkMode ? 'text-white/60' : 'text-purple-600'}`}>Анимационная студия будущего</p>
+                <h1 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-purple-900'} tracking-wide`}>ФОРТОРИУМ</h1>
+              </div>
+              
+              {/* Compact Stats */}
+              <div className="hidden md:flex items-center gap-1 ml-4">
+                <Badge variant="outline" className={`${isDarkMode ? 'border-white/10 text-white/70' : 'border-purple-200 text-purple-600'} text-xs`}>
+                  {projects.length} 🎬
+                </Badge>
+                <Badge variant="outline" className={`${isDarkMode ? 'border-white/10 text-white/70' : 'border-purple-200 text-purple-600'} text-xs`}>
+                  {hiredAgents.length} 👥
+                </Badge>
+                <Badge variant="outline" className={`${isDarkMode ? 'border-white/10 text-white/70' : 'border-purple-200 text-purple-600'} text-xs`}>
+                  {director.reputation}% ⭐
+                </Badge>
               </div>
             </div>
 
-            {/* Studio Stats */}
-            <div className="flex items-center gap-4">
-              <div className={`flex items-center gap-2 px-3 py-1.5 ${isDarkMode ? 'bg-white/5' : 'bg-purple-100'} rounded-lg`}>
-                <span className="text-lg">👔</span>
-                <span className={`${isDarkMode ? 'text-white' : 'text-purple-900'} text-sm font-medium`}>{director.status === 'active' ? 'Директор онлайн' : 'Директор занят'}</span>
+            {/* Right Side - Actions */}
+            <div className="flex items-center gap-2">
+              {/* Primary Actions */}
+              <div className="flex items-center gap-1">
+                <Button
+                  onClick={() => setShowAIChat(true)}
+                  size="sm"
+                  className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 h-8"
+                >
+                  🤖 AI
+                </Button>
+                
+                <Button
+                  onClick={() => setShowIdeaGenerator(true)}
+                  size="sm"
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 h-8"
+                >
+                  💡
+                </Button>
+                
+                <Button
+                  onClick={startPresentation}
+                  disabled={!script?.scenes || Object.keys(sceneImages).length === 0}
+                  size="sm"
+                  className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 disabled:opacity-50 h-8"
+                >
+                  📽️
+                </Button>
               </div>
-              <div className={`flex items-center gap-2 px-3 py-1.5 ${isDarkMode ? 'bg-white/5' : 'bg-purple-100'} rounded-lg`}>
-                <span className="text-lg">🎬</span>
-                <span className={`${isDarkMode ? 'text-white' : 'text-purple-900'} text-sm font-medium`}>{projects.length} проектов</span>
+              
+              {/* Divider */}
+              <div className={`w-px h-6 ${isDarkMode ? 'bg-white/10' : 'bg-purple-200'}`} />
+              
+              {/* Create Menu */}
+              <div className="relative">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className={`h-8 ${isDarkMode ? 'border-white/10 text-white hover:bg-white/5' : 'border-purple-200 text-purple-700 hover:bg-purple-50'}`}>
+                      ➕ {language === 'ru' ? 'Создать' : 'Create'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => setShowKeyframeEditor(true)} disabled={!script?.scenes}>
+                      🎬 {language === 'ru' ? 'Ключевые кадры' : 'Keyframes'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowMusicStudio(true)}>
+                      🎹 {language === 'ru' ? 'Музыкальная студия' : 'Music Studio'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowSoundtrackDialog(true)} disabled={!script}>
+                      🎵 {language === 'ru' ? 'Саундтрек' : 'Soundtrack'}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setShowImageAgentSelector(true)}>
+                      🎨 {language === 'ru' ? 'AI Художник' : 'AI Artist'}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <div className={`flex items-center gap-2 px-3 py-1.5 ${isDarkMode ? 'bg-white/5' : 'bg-purple-100'} rounded-lg`}>
-                <span className="text-lg">⭐</span>
-                <span className={`${isDarkMode ? 'text-white' : 'text-purple-900'} text-sm font-medium`}>{director.reputation}%</span>
+              
+              {/* Export Menu */}
+              <div className="relative">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className={`h-8 ${isDarkMode ? 'border-white/10 text-white hover:bg-white/5' : 'border-purple-200 text-purple-700 hover:bg-purple-50'}`}>
+                      📤 {language === 'ru' ? 'Экспорт' : 'Export'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={exportToPdf} disabled={!script || isExportingPdf}>
+                      📄 PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={generateShareLink} disabled={!script}>
+                      🔗 {language === 'ru' ? 'Поделиться' : 'Share'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={exportProject} disabled={!script}>
+                      💾 JSON
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <div className={`flex items-center gap-2 px-3 py-1.5 ${isDarkMode ? 'bg-white/5' : 'bg-purple-100'} rounded-lg`}>
-                <span className="text-lg">👥</span>
-                <span className={`${isDarkMode ? 'text-white' : 'text-purple-900'} text-sm font-medium`}>{hiredAgents.length} агентов</span>
+              
+              {/* Settings Menu */}
+              <div className="relative">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className={`h-8 w-8 p-0 ${isDarkMode ? 'text-white hover:bg-white/5' : 'text-purple-700 hover:bg-purple-50'}`}>
+                      ⚙️
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={toggleTheme}>
+                      {isDarkMode ? '☀️' : '🌙'} {isDarkMode ? (language === 'ru' ? 'Светлая тема' : 'Light theme') : (language === 'ru' ? 'Тёмная тема' : 'Dark theme')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={toggleLanguage}>
+                      {language === 'ru' ? '🇬🇧 English' : '🇷🇺 Русский'}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setShowHotkeysHelp(true)}>
+                      ⌨️ {language === 'ru' ? 'Горячие клавиши' : 'Hotkeys'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={saveToLocalStorage}>
+                      💾 {language === 'ru' ? 'Сохранить' : 'Save'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={clearLocalStorage} className="text-red-400">
+                      🗑️ {language === 'ru' ? 'Очистить проект' : 'Clear project'}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              
-              {/* Theme Toggle */}
-              <Button
-                onClick={toggleTheme}
-                variant="outline"
-                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'}`}
-              >
-                {isDarkMode ? '☀️' : '🌙'}
-              </Button>
-              
-              {/* Language Toggle */}
-              <Button
-                onClick={toggleLanguage}
-                variant="outline"
-                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'}`}
-              >
-                {language === 'ru' ? '🇷🇺' : '🇬🇧'}
-              </Button>
-              
-              {/* Hotkeys Help */}
-              <Button
-                onClick={() => setShowHotkeysHelp(true)}
-                variant="outline"
-                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'}`}
-              >
-                ⌨️
-              </Button>
-              
-              {/* Presentation Mode */}
-              <Button
-                onClick={startPresentation}
-                disabled={!script?.scenes || Object.keys(sceneImages).length === 0}
-                className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 disabled:opacity-50"
-              >
-                📽️ {language === 'ru' ? 'Презентация' : 'Present'}
-              </Button>
-              
-              {/* Idea Generator Button */}
-              <Button
-                onClick={() => setShowIdeaGenerator(true)}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-              >
-                💡 {language === 'ru' ? 'Идеи' : 'Ideas'}
-              </Button>
-              
-              {/* AI Assistant Button */}
-              <Button
-                onClick={() => setShowAIChat(true)}
-                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
-              >
-                🤖 AI
-              </Button>
-              
-              {/* Image Agent Selector Button */}
-              <Button
-                onClick={() => setShowImageAgentSelector(true)}
-                variant="outline"
-                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'}`}
-              >
-                {FREE_IMAGE_AGENTS.find(a => a.id === selectedImageAgent)?.icon || '🎨'} {FREE_IMAGE_AGENTS.find(a => a.id === selectedImageAgent)?.name || 'AI Art'}
-              </Button>
-              
-              {/* Share Button */}
-              <Button
-                onClick={generateShareLink}
-                disabled={!script}
-                variant="outline"
-                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'} disabled:opacity-50`}
-              >
-                🔗 {language === 'ru' ? 'Поделиться' : 'Share'}
-              </Button>
-              
-              {/* PDF Export Button */}
-              <Button
-                onClick={exportToPdf}
-                disabled={!script || isExportingPdf}
-                variant="outline"
-                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'} disabled:opacity-50`}
-              >
-                {isExportingPdf ? (
-                  <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> PDF...</>
-                ) : (
-                  <>📄 PDF</>
-                )}
-              </Button>
-              
-              {/* Soundtrack Button */}
-              <Button
-                onClick={() => setShowSoundtrackDialog(true)}
-                disabled={!script}
-                variant="outline"
-                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'} disabled:opacity-50`}
-              >
-                🎵 {language === 'ru' ? 'Музыка' : 'Music'}
-              </Button>
-              
-              {/* Keyframes Button v3.0.0 */}
-              <Button
-                onClick={() => setShowKeyframeEditor(true)}
-                disabled={!script?.scenes}
-                variant="outline"
-                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'} disabled:opacity-50`}
-              >
-                🎬 {language === 'ru' ? 'Кадры' : 'Keyframes'}
-              </Button>
-              
-              {/* Music Studio Button v3.0.0 */}
-              <Button
-                onClick={() => setShowMusicStudio(true)}
-                className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600"
-              >
-                🎹 {language === 'ru' ? 'Студия' : 'Studio'}
-              </Button>
             </div>
           </div>
           
-          {/* Auto-save indicator */}
-          <div className="flex items-center justify-end gap-2 mt-2 text-xs">
-            {saveStatus === 'saving' ? (
-              <span className={`${isDarkMode ? 'text-amber-400' : 'text-amber-600'} flex items-center gap-1`}>
-                <Loader2 className="w-3 h-3 animate-spin" />
-                {language === 'ru' ? 'Сохранение...' : 'Saving...'}
-              </span>
-            ) : saveStatus === 'unsaved' ? (
-              <span className={`${isDarkMode ? 'text-orange-400' : 'text-orange-600'} flex items-center gap-1`}>
-                ● {language === 'ru' ? 'Не сохранено' : 'Unsaved'}
-              </span>
-            ) : (
-              <span className={`${isDarkMode ? 'text-green-400' : 'text-green-600'} flex items-center gap-1`}>
-                ✓ {language === 'ru' ? 'Сохранено' : 'Saved'} {lastSaveTime && formatSaveTime(lastSaveTime)}
-              </span>
-            )}
+          {/* Auto-save indicator - second row */}
+          <div className="flex items-center justify-between py-1 border-t border-white/5">
+            <div className="flex items-center gap-2 text-xs">
+              {script && (
+                <span className={`${isDarkMode ? 'text-white/50' : 'text-purple-500'}`}>
+                  📝 {script.title} • {script.scenes?.length || 0} {language === 'ru' ? 'сцен' : 'scenes'}
+                </span>
+              )}
+            </div>
+            <div className="text-xs">
+              {saveStatus === 'saving' ? (
+                <span className={`${isDarkMode ? 'text-amber-400' : 'text-amber-600'} flex items-center gap-1`}>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  {language === 'ru' ? 'Сохранение...' : 'Saving...'}
+                </span>
+              ) : saveStatus === 'unsaved' ? (
+                <span className={`${isDarkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                  ● {language === 'ru' ? 'Не сохранено' : 'Unsaved'}
+                </span>
+              ) : (
+                <span className={`${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                  ✓ {lastSaveTime && formatSaveTime(lastSaveTime)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-white/5 border border-white/10">
-            <TabsTrigger value="studio" className="data-[state=active]:bg-white/10">
-              <span className="mr-2">🏢</span> Студия
+      <main className="max-w-7xl mx-auto px-4 py-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className={`${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/70 border-purple-200'} border`}>
+            <TabsTrigger value="studio" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
+              🏢 {language === 'ru' ? 'Студия' : 'Studio'}
             </TabsTrigger>
-            <TabsTrigger value="team" className="data-[state=active]:bg-white/10">
-              <Users className="w-4 h-4 mr-2" /> Команда
+            <TabsTrigger value="team" className="data-[state=active]:bg-purple-500/20">
+              👥 {language === 'ru' ? 'Команда' : 'Team'}
             </TabsTrigger>
-            <TabsTrigger value="hr" className="data-[state=active]:bg-white/10">
-              <UserPlus className="w-4 h-4 mr-2" /> HR Отдел
+            <TabsTrigger value="hr" className="data-[state=active]:bg-purple-500/20">
+              📋 HR
             </TabsTrigger>
-            <TabsTrigger value="projects" className="data-[state=active]:bg-white/10">
-              <Film className="w-4 h-4 mr-2" /> Проекты
+            <TabsTrigger value="projects" className="data-[state=active]:bg-purple-500/20">
+              🎬 {language === 'ru' ? 'Проекты' : 'Projects'}
             </TabsTrigger>
           </TabsList>
 
           {/* Studio Tab */}
-          <TabsContent value="studio" className="space-y-6">
-            {/* Director Card */}
-            <Card className="bg-white/5 border-white/10">
-              <CardHeader>
+          <TabsContent value="studio" className="space-y-4">
+            {/* Director Card - Compact */}
+            <Card className={`${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/70 border-purple-200'}`}>
+              <CardContent className="p-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-3xl">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-2xl">
                     👔
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <CardTitle className="text-white text-xl">Директор ФОРТОРИУМ</CardTitle>
-                      <Badge className={`${director.status === 'hiring' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'}`}>
-                        {director.status === 'hiring' ? 'Ищет специалистов' : director.status === 'active' ? 'Управляет' : 'Онлайн'}
+                      <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-purple-900'}`}>
+                        {language === 'ru' ? 'AI Директор' : 'AI Director'}
+                      </span>
+                      <Badge className={`${director.status === 'active' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'}`}>
+                        {director.status === 'active' ? (language === 'ru' ? 'Онлайн' : 'Online') : (language === 'ru' ? 'Занят' : 'Busy')}
                       </Badge>
                     </div>
-                    <CardDescription className="text-white/60">
-                      AI-директор координирует работу студии
-                    </CardDescription>
+                    <div className={`text-sm ${isDarkMode ? 'text-white/60' : 'text-purple-600'}`}>
+                      {language === 'ru' ? 'Координирует работу студии' : 'Coordinates studio work'}
+                    </div>
                   </div>
                   <Button 
                     onClick={initDatabase}
                     variant="outline"
-                    className="border-white/20 text-white hover:bg-white/10"
+                    size="sm"
+                    className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-700 hover:bg-purple-50'} h-8`}
                   >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Инициализировать БД
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    {language === 'ru' ? 'Инициализировать' : 'Initialize'}
                   </Button>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                  <div className="p-3 bg-white/5 rounded-lg">
-                    <div className="text-white/60 text-sm">Проектов</div>
-                    <div className="text-white text-2xl font-bold">{projects.length}</div>
-                  </div>
-                  <div className="p-3 bg-white/5 rounded-lg">
-                    <div className="text-white/60 text-sm">Репутация</div>
-                    <div className="text-white text-2xl font-bold">{director.reputation}%</div>
-                    <Progress value={director.reputation} className="mt-2 h-1" />
-                  </div>
-                  <div className="p-3 bg-white/5 rounded-lg">
-                    <div className="text-white/60 text-sm">Команда</div>
-                    <div className="text-white text-2xl font-bold">{hiredAgents.length} чел.</div>
-                  </div>
-                </div>
-
-                {/* Quick Stats Dashboard */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
-                  <div className="p-2 bg-white/5 rounded-lg text-center">
-                    <div className="text-2xl">📝</div>
-                    <div className="text-white font-bold">{tasks.filter(t => t.type === 'script').length}</div>
-                    <div className="text-white/50 text-xs">Сценариев</div>
-                  </div>
-                  <div className="p-2 bg-white/5 rounded-lg text-center">
-                    <div className="text-2xl">🎨</div>
-                    <div className="text-white font-bold">{Object.keys(sceneImages).length}</div>
-                    <div className="text-white/50 text-xs">Изображений</div>
-                  </div>
-                  <div className="p-2 bg-white/5 rounded-lg text-center">
-                    <div className="text-2xl">🎬</div>
-                    <div className="text-white font-bold">{projects.filter(p => p.status === 'in_progress').length}</div>
-                    <div className="text-white/50 text-xs">В работе</div>
-                  </div>
-                  <div className="p-2 bg-white/5 rounded-lg text-center">
-                    <div className="text-2xl">✅</div>
-                    <div className="text-white font-bold">{projects.filter(p => p.status === 'completed').length}</div>
-                    <div className="text-white/50 text-xs">Завершено</div>
-                  </div>
-                </div>
-
-                {/* Director Analysis */}
-                {directorAnalysis && (
-                  <div className="space-y-4">
-                    {/* Decisions */}
-                    {directorAnalysis.decisions?.length > 0 && (
-                      <div className="p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg border border-amber-500/20">
-                        <h4 className="text-amber-400 font-medium mb-2 flex items-center gap-2">
-                          🎯 Решения директора
-                        </h4>
-                        <div className="space-y-1">
-                          {directorAnalysis.decisions.map((d: string, i: number) => (
-                            <p key={i} className="text-white/80 text-sm">{d}</p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Recommendations */}
-                    {directorAnalysis.recommendations?.length > 0 && (
-                      <div className="p-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-lg border border-blue-500/20">
-                        <h4 className="text-blue-400 font-medium mb-2 flex items-center gap-2">
-                          💡 Рекомендации
-                        </h4>
-                        <div className="space-y-1">
-                          {directorAnalysis.recommendations.map((r: string, i: number) => (
-                            <p key={i} className="text-white/80 text-sm">• {r}</p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Missing Roles */}
-                    {directorAnalysis.teamAnalysis?.missingRoles?.length > 0 && (
-                      <div className="p-4 bg-white/5 rounded-lg">
-                        <h4 className="text-white/80 font-medium mb-2">⚠️ Не хватает специалистов:</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {directorAnalysis.teamAnalysis.missingRoles.map((r: any, i: number) => (
-                            <Badge key={i} variant="outline" className="border-red-500/30 text-red-400">
-                              {r.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Next Action */}
-                    {directorAnalysis.nextAction && (
-                      <div className="flex items-center gap-3 p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                        <span className="text-2xl">🎮</span>
-                        <div>
-                          <span className="text-purple-400 font-medium">Следующий шаг: </span>
-                          <span className="text-white/80">
-                            {directorAnalysis.nextAction === 'review_candidates' 
-                              ? 'Рассмотреть кандидатов на утверждение' 
-                              : directorAnalysis.nextAction.startsWith('hire_') 
-                                ? `Нанять ${directorAnalysis.nextAction.replace('hire_', '')}` 
-                                : 'Создать новый проект'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Full Report */}
-                {directorReport && (
-                  <div className="mt-4 p-4 bg-white/5 rounded-lg">
-                    <h4 className="text-white font-medium mb-2 flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4" />
-                      Полный отчёт
-                    </h4>
-                    <pre className="text-white/70 text-sm whitespace-pre-wrap font-sans">{directorReport}</pre>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-white/5 border-white/10 hover:bg-white/10 cursor-pointer transition-colors" onClick={() => setActiveTab('hr')}>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center text-2xl">
+              <Card className={`${isDarkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white/70 border-purple-200 hover:bg-white'} cursor-pointer transition-colors`} onClick={() => setActiveTab('hr')}>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-xl">
                       🤝
                     </div>
                     <div>
-                      <h3 className="text-white font-medium">HR Отдел</h3>
-                      <p className="text-white/60 text-sm">Найм новых агентов</p>
+                      <h3 className={`${isDarkMode ? 'text-white' : 'text-purple-900'} font-medium text-sm`}>{language === 'ru' ? 'HR Отдел' : 'HR Dept'}</h3>
+                      <p className={`${isDarkMode ? 'text-white/60' : 'text-purple-600'} text-xs`}>{language === 'ru' ? 'Найм агентов' : 'Hire agents'}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/5 border-white/10 hover:bg-white/10 cursor-pointer transition-colors" onClick={() => setActiveTab('team')}>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center text-2xl">
+              <Card className={`${isDarkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white/70 border-purple-200 hover:bg-white'} cursor-pointer transition-colors`} onClick={() => setActiveTab('team')}>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-xl">
                       👥
                     </div>
                     <div>
-                      <h3 className="text-white font-medium">Команда</h3>
-                      <p className="text-white/60 text-sm">{hiredAgents.length} агентов</p>
+                      <h3 className={`${isDarkMode ? 'text-white' : 'text-purple-900'} font-medium text-sm`}>{language === 'ru' ? 'Команда' : 'Team'}</h3>
+                      <p className={`${isDarkMode ? 'text-white/60' : 'text-purple-600'} text-xs`}>{hiredAgents.length} {language === 'ru' ? 'агентов' : 'agents'}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/5 border-white/10 hover:bg-white/10 cursor-pointer transition-colors" onClick={() => setActiveTab('projects')}>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-pink-500/20 flex items-center justify-center text-2xl">
+              <Card className={`${isDarkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white/70 border-purple-200 hover:bg-white'} cursor-pointer transition-colors`} onClick={() => setActiveTab('projects')}>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center text-xl">
                       🎬
                     </div>
                     <div>
-                      <h3 className="text-white font-medium">Проекты</h3>
-                      <p className="text-white/60 text-sm">{projects.length} проектов</p>
+                      <h3 className={`${isDarkMode ? 'text-white' : 'text-purple-900'} font-medium text-sm`}>{language === 'ru' ? 'Проекты' : 'Projects'}</h3>
+                      <p className={`${isDarkMode ? 'text-white/60' : 'text-purple-600'} text-xs`}>{projects.length} {language === 'ru' ? 'проектов' : 'projects'}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Pending Candidates - Кандидаты на утверждение */}
+            {/* Pending Candidates */}
             {pendingCandidates.length > 0 && (
-              <Card className="bg-white/5 border-white/10 border-2 border-amber-500/30">
-                <CardHeader>
+              <Card className={`${isDarkMode ? 'bg-white/5 border-white/10 border-amber-500/30' : 'bg-white/70 border-purple-200 border-amber-500/50'} border-2`}>
+                <CardHeader className="pb-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 flex items-center justify-center text-2xl">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 flex items-center justify-center text-xl">
                       📋
                     </div>
                     <div className="flex-1">
-                      <CardTitle className="text-white text-lg">Кандидаты на утверждение</CardTitle>
-                      <CardDescription className="text-white/60">
-                        HR нашёл {pendingCandidates.length} кандидатов. Примите решение.
+                      <CardTitle className={`${isDarkMode ? 'text-white' : 'text-purple-900'} text-base`}>{language === 'ru' ? 'Кандидаты на утверждение' : 'Pending Candidates'}</CardTitle>
+                      <CardDescription className={`${isDarkMode ? 'text-white/60' : 'text-purple-600'} text-sm`}>
+                        {language === 'ru' ? `HR нашёл ${pendingCandidates.length} кандидатов` : `HR found ${pendingCandidates.length} candidates`}
                       </CardDescription>
                     </div>
                   </div>
@@ -7305,8 +7199,8 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v3.0.0
-            </span>
+              v3.1.0
+          </span>
           </div>
         </div>
       </footer>
@@ -7314,7 +7208,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v3.0.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v3.1.0</span>
         </div>
       </div>
     </div>
