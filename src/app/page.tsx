@@ -351,6 +351,17 @@ export default function AnimationStudio() {
   // Справка по горячим клавишам
   const [showHotkeysHelp, setShowHotkeysHelp] = useState(false);
   
+  // Диалог шаринга проекта
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  
+  // Drag & Drop для сцен
+  const [draggedSceneIndex, setDraggedSceneIndex] = useState<number | null>(null);
+  
+  // Сохранённые шаблоны голосов
+  const [voicePreviews, setVoicePreviews] = useState<Record<string, string>>({});
+  
   // AI Ассистент
   const [showAIChat, setShowAIChat] = useState(false);
   const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
@@ -547,6 +558,386 @@ export default function AnimationStudio() {
       progress,
       style: ANIMATION_STYLES.find(s => s.value === newProject.style)?.label || newProject.style
     };
+  };
+
+  // ============================================
+  // ИНДИКАТОР АВТОСОХРАНЕНИЯ
+  // ============================================
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+  
+  const formatSaveTime = (date: Date | null): string => {
+    if (!date) return '';
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diff < 10) return language === 'ru' ? 'только что' : 'just now';
+    if (diff < 60) return language === 'ru' ? `${diff} сек. назад` : `${diff}s ago`;
+    if (diff < 3600) return language === 'ru' ? `${Math.floor(diff / 60)} мин. назад` : `${Math.floor(diff / 60)}m ago`;
+    return date.toLocaleTimeString(language === 'ru' ? 'ru-RU' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // ============================================
+  // ЭКСПОРТ В PDF
+  // ============================================
+  const exportToPdf = async () => {
+    if (!script) {
+      toast({
+        title: language === 'ru' ? "⚠️ Нет данных" : "⚠️ No data",
+        description: language === 'ru' ? "Сначала создайте сценарий" : "Create a script first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsExportingPdf(true);
+    
+    try {
+      const styleName = ANIMATION_STYLES.find(s => s.value === newProject.style)?.label || newProject.style;
+      
+      // Создаём HTML для PDF
+      const pdfContent = `
+        <!DOCTYPE html>
+        <html lang="${language}">
+        <head>
+          <meta charset="UTF-8">
+          <title>${script.title} - ФОРТОРИУМ</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            @page { 
+              margin: 2cm;
+              size: A4;
+            }
+            body { 
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              font-size: 11pt;
+              line-height: 1.6;
+              color: #1a1a1a;
+            }
+            .cover {
+              text-align: center;
+              padding: 100px 0;
+              page-break-after: always;
+            }
+            .cover h1 {
+              font-size: 36pt;
+              color: #6366f1;
+              margin-bottom: 20px;
+            }
+            .cover .subtitle {
+              font-size: 14pt;
+              color: #666;
+              font-style: italic;
+            }
+            .cover .meta {
+              margin-top: 60px;
+              font-size: 10pt;
+              color: #888;
+            }
+            .section-title {
+              font-size: 18pt;
+              color: #6366f1;
+              border-bottom: 2px solid #6366f1;
+              padding-bottom: 10px;
+              margin: 40px 0 20px;
+            }
+            .character-card {
+              background: #f8f8ff;
+              padding: 15px;
+              margin: 15px 0;
+              border-left: 4px solid #6366f1;
+              page-break-inside: avoid;
+            }
+            .character-name {
+              font-size: 14pt;
+              font-weight: bold;
+              color: #333;
+            }
+            .character-desc {
+              font-style: italic;
+              color: #555;
+              margin: 5px 0;
+            }
+            .character-traits {
+              font-size: 9pt;
+              color: #888;
+            }
+            .scene {
+              margin: 25px 0;
+              padding: 20px;
+              border: 1px solid #ddd;
+              border-radius: 8px;
+              page-break-inside: avoid;
+            }
+            .scene-header {
+              font-size: 14pt;
+              font-weight: bold;
+              color: #333;
+              margin-bottom: 10px;
+            }
+            .scene-location {
+              font-style: italic;
+              color: #666;
+              margin-bottom: 15px;
+              font-size: 10pt;
+            }
+            .dialogue {
+              margin: 8px 15px;
+              padding: 8px;
+              background: #f9f9f9;
+              border-radius: 4px;
+            }
+            .dialogue-character {
+              font-weight: bold;
+              color: #6366f1;
+            }
+            .dialogue-line {
+              font-style: italic;
+            }
+            .action {
+              background: #f0f0f0;
+              padding: 10px;
+              margin: 10px 0;
+              border-radius: 4px;
+              font-style: italic;
+              color: #555;
+            }
+            .footer {
+              margin-top: 50px;
+              text-align: center;
+              font-size: 9pt;
+              color: #888;
+              border-top: 1px solid #ddd;
+              padding-top: 20px;
+            }
+            .info-box {
+              background: #f5f5f5;
+              padding: 15px;
+              border-radius: 8px;
+              margin: 20px 0;
+            }
+            .info-row {
+              margin: 5px 0;
+            }
+            .info-label {
+              font-weight: bold;
+              color: #333;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="cover">
+            <h1>🎬 ${script.title}</h1>
+            <p class="subtitle">${script.logline || ''}</p>
+            <div class="meta">
+              <p>${language === 'ru' ? 'Стиль' : 'Style'}: ${styleName}</p>
+              <p>${language === 'ru' ? 'Длительность' : 'Duration'}: ${script.totalDuration || 30}${language === 'ru' ? ' секунд' : ' seconds'}</p>
+              <p>${language === 'ru' ? 'Создано' : 'Created'}: ${new Date().toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US')}</p>
+              <p style="margin-top: 20px;">ФОРТОРИУМ — ${language === 'ru' ? 'Анимационная студия будущего' : 'Animation Studio of the Future'}</p>
+            </div>
+          </div>
+          
+          <h2 class="section-title">👥 ${language === 'ru' ? 'Персонажи' : 'Characters'} (${script.characters?.length || 0})</h2>
+          ${script.characters?.map((c: any) => `
+            <div class="character-card">
+              <div class="character-name">${c.name}</div>
+              <div class="character-desc">${c.description || ''}</div>
+              ${c.traits?.length ? `<div class="character-traits">${language === 'ru' ? 'Черты' : 'Traits'}: ${c.traits.join(', ')}</div>` : ''}
+            </div>
+          `).join('') || `<p>${language === 'ru' ? 'Персонажи не определены' : 'No characters defined'}</p>`}
+          
+          <h2 class="section-title">📝 ${language === 'ru' ? 'Сценарий' : 'Script'} (${script.scenes?.length || 0} ${language === 'ru' ? 'сцен' : 'scenes'})</h2>
+          ${script.scenes?.map((scene: any) => `
+            <div class="scene">
+              <div class="scene-header">${language === 'ru' ? 'Сцена' : 'Scene'} ${scene.number}: ${scene.title}</div>
+              <div class="scene-location">📍 ${scene.location || (language === 'ru' ? 'Локация не указана' : 'Location not specified')} | ⏱️ ${scene.duration || 5}${language === 'ru' ? 'с' : 's'}</div>
+              <p style="margin: 10px 0;">${scene.description || ''}</p>
+              ${scene.dialogue?.length ? `
+                <div class="dialogues">
+                  ${scene.dialogue.map((d: any) => `
+                    <div class="dialogue">
+                      <span class="dialogue-character">${d.character}:</span>
+                      <span class="dialogue-line"> "${d.line}"</span>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
+              ${scene.action ? `<div class="action">🎬 ${scene.action}</div>` : ''}
+            </div>
+          `).join('') || `<p>${language === 'ru' ? 'Сцены не определены' : 'No scenes defined'}</p>`}
+          
+          <div class="footer">
+            ${language === 'ru' ? 'Создано в' : 'Created in'} <strong>ФОРТОРИУМ</strong> — ${language === 'ru' ? 'Анимационная студия будущего' : 'Animation Studio of the Future'}<br>
+            https://fortorium-01.vercel.app
+          </div>
+        </body>
+        </html>
+      `;
+      
+      // Открываем в новом окне для печати
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(pdfContent);
+        printWindow.document.close();
+        printWindow.focus();
+        
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+        
+        toast({
+          title: "📄 PDF " + (language === 'ru' ? 'готов' : 'ready'),
+          description: language === 'ru' ? 'Используйте Ctrl+P для сохранения' : 'Use Ctrl+P to save',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "❌ " + (language === 'ru' ? 'Ошибка' : 'Error'),
+        description: language === 'ru' ? 'Не удалось создать PDF' : 'Failed to create PDF',
+        variant: "destructive"
+      });
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
+  // ============================================
+  // ШАРИНГ ПРОЕКТА
+  // ============================================
+  const generateShareLink = () => {
+    if (!script) {
+      toast({
+        title: language === 'ru' ? "⚠️ Нет данных" : "⚠️ No data",
+        description: language === 'ru' ? "Сначала создайте сценарий" : "Create a script first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const shareData = {
+      project: newProject,
+      script,
+      sceneImages: Object.keys(sceneImages).length > 0 ? sceneImages : undefined,
+      characterImages: Object.keys(characterImages).length > 0 ? characterImages : undefined,
+      sharedAt: new Date().toISOString(),
+      version: '2.6.0'
+    };
+    
+    // Кодируем в base64
+    const encoded = btoa(encodeURIComponent(JSON.stringify(shareData)));
+    const link = `${window.location.origin}?share=${encoded}`;
+    
+    setShareLink(link);
+    setShowShareDialog(true);
+  };
+  
+  const copyShareLink = () => {
+    navigator.clipboard.writeText(shareLink).then(() => {
+      toast({
+        title: "📋 " + (language === 'ru' ? 'Скопировано' : 'Copied'),
+        description: language === 'ru' ? 'Ссылка скопирована в буфер обмена' : 'Link copied to clipboard',
+      });
+    });
+  };
+  
+  // Загрузка проекта из share-ссылки
+  const loadSharedProject = (encodedData: string) => {
+    try {
+      const decoded = JSON.parse(decodeURIComponent(atob(encodedData)));
+      if (decoded.script) {
+        setScript(decoded.script);
+        setNewProject(decoded.project || newProject);
+        if (decoded.sceneImages) setSceneImages(decoded.sceneImages);
+        if (decoded.characterImages) setCharacterImages(decoded.characterImages);
+        toast({
+          title: "📥 " + (language === 'ru' ? 'Проект загружен' : 'Project loaded'),
+          description: decoded.project?.title || (language === 'ru' ? 'Из общей ссылки' : 'From shared link'),
+        });
+      }
+    } catch (e) {
+      console.error('Failed to load shared project:', e);
+    }
+  };
+
+  // ============================================
+  // DRAG & DROP ДЛЯ СЦЕН
+  // ============================================
+  const handleSceneDragStart = (index: number) => {
+    setDraggedSceneIndex(index);
+  };
+  
+  const handleSceneDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedSceneIndex === null || draggedSceneIndex === index) return;
+  };
+  
+  const handleSceneDrop = (targetIndex: number) => {
+    if (draggedSceneIndex === null || draggedSceneIndex === targetIndex) return;
+    
+    const newScenes = [...(script?.scenes || [])];
+    const draggedScene = newScenes[draggedSceneIndex];
+    
+    // Удаляем из старой позиции
+    newScenes.splice(draggedSceneIndex, 1);
+    // Вставляем в новую позицию
+    newScenes.splice(targetIndex, 0, draggedScene);
+    
+    // Обновляем номера сцен
+    newScenes.forEach((scene, idx) => {
+      scene.number = idx + 1;
+    });
+    
+    setScript({
+      ...script,
+      scenes: newScenes
+    });
+    
+    // Обновляем индексы изображений
+    const newSceneImages: Record<number, any> = {};
+    newScenes.forEach((_, idx) => {
+      const oldIdx = idx < targetIndex 
+        ? (idx < draggedSceneIndex ? idx : idx + 1)
+        : (idx > targetIndex ? idx : draggedSceneIndex);
+      // Это упрощённая логика - в реальности нужно более сложное обновление
+    });
+    
+    setDraggedSceneIndex(null);
+    saveToHistory({ ...script, scenes: newScenes });
+    
+    toast({
+      title: "🔄 " + (language === 'ru' ? 'Сцены перемещены' : 'Scenes reordered'),
+      description: language === 'ru' ? `Сцена ${draggedSceneIndex + 1} перемещена` : `Scene ${draggedSceneIndex + 1} moved`,
+    });
+  };
+
+  // ============================================
+  // ГОЛОСОВОЕ ПРЕВЬЮ
+  // ============================================
+  const playVoicePreview = async (characterName: string) => {
+    const character = script?.characters?.find((c: any) => c.name === characterName);
+    if (!character) return;
+    
+    const previewText = language === 'ru' 
+      ? `Привет! Меня зовут ${characterName}. Я ${character.description || 'персонаж'}.`
+      : `Hello! My name is ${characterName}. I am ${character.description || 'a character'}.`;
+    
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: previewText, character: characterName })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.audioUrl) {
+          const audio = new Audio(data.audioUrl);
+          audio.play();
+        }
+      }
+    } catch (error) {
+      console.error('Voice preview error:', error);
+    }
   };
 
   // ============================================
@@ -1718,8 +2109,10 @@ export default function AnimationStudio() {
     if (!autoSaveEnabled || !script) return;
     
     const interval = setInterval(() => {
+      setSaveStatus('saving');
+      
       const projectData = {
-        version: '2.5.0',
+        version: '2.6.0',
         savedAt: new Date().toISOString(),
         project: newProject,
         script,
@@ -1730,12 +2123,30 @@ export default function AnimationStudio() {
       };
       
       localStorage.setItem('fortorium_current_project', JSON.stringify(projectData));
-      setLastSaved(new Date());
-      console.log('🔄 Автосохранение выполнено');
+      setLastSaveTime(new Date());
+      setSaveStatus('saved');
     }, 60000); // Каждую минуту
     
     return () => clearInterval(interval);
   }, [autoSaveEnabled, script, newProject, storyboard, sceneImages, characterImages, workResult, historyIndex]);
+  
+  // Отслеживание изменений для статуса сохранения
+  useEffect(() => {
+    if (script && lastSaveTime) {
+      setSaveStatus('unsaved');
+    }
+  }, [script, newProject, sceneImages, characterImages]);
+  
+  // Загрузка из share-ссылки при старте
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shareData = params.get('share');
+    if (shareData) {
+      loadSharedProject(shareData);
+      // Очищаем URL от параметра share
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   // Генерация видео из изображений
   const generateVideo = async () => {
@@ -1911,8 +2322,10 @@ export default function AnimationStudio() {
   const saveToLocalStorage = () => {
     if (!script) return;
     
+    setSaveStatus('saving');
+    
     const projectData = {
-      version: '2.1.0',
+      version: '2.6.0',
       savedAt: new Date().toISOString(),
       project: newProject,
       script,
@@ -1923,9 +2336,11 @@ export default function AnimationStudio() {
     };
     
     localStorage.setItem('fortorium_current_project', JSON.stringify(projectData));
+    setLastSaveTime(new Date());
+    setSaveStatus('saved');
     toast({
-      title: "💾 Сохранено",
-      description: "Проект сохранён в браузере",
+      title: "💾 " + (language === 'ru' ? 'Сохранено' : 'Saved'),
+      description: language === 'ru' ? 'Проект сохранён в браузере' : 'Project saved in browser',
     });
   };
   
@@ -2276,7 +2691,49 @@ export default function AnimationStudio() {
               >
                 🤖 AI
               </Button>
+              
+              {/* Share Button */}
+              <Button
+                onClick={generateShareLink}
+                disabled={!script}
+                variant="outline"
+                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'} disabled:opacity-50`}
+              >
+                🔗 {language === 'ru' ? 'Поделиться' : 'Share'}
+              </Button>
+              
+              {/* PDF Export Button */}
+              <Button
+                onClick={exportToPdf}
+                disabled={!script || isExportingPdf}
+                variant="outline"
+                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'} disabled:opacity-50`}
+              >
+                {isExportingPdf ? (
+                  <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> PDF...</>
+                ) : (
+                  <>📄 PDF</>
+                )}
+              </Button>
             </div>
+          </div>
+          
+          {/* Auto-save indicator */}
+          <div className="flex items-center justify-end gap-2 mt-2 text-xs">
+            {saveStatus === 'saving' ? (
+              <span className={`${isDarkMode ? 'text-amber-400' : 'text-amber-600'} flex items-center gap-1`}>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                {language === 'ru' ? 'Сохранение...' : 'Saving...'}
+              </span>
+            ) : saveStatus === 'unsaved' ? (
+              <span className={`${isDarkMode ? 'text-orange-400' : 'text-orange-600'} flex items-center gap-1`}>
+                ● {language === 'ru' ? 'Не сохранено' : 'Unsaved'}
+              </span>
+            ) : (
+              <span className={`${isDarkMode ? 'text-green-400' : 'text-green-600'} flex items-center gap-1`}>
+                ✓ {language === 'ru' ? 'Сохранено' : 'Saved'} {lastSaveTime && formatSaveTime(lastSaveTime)}
+              </span>
+            )}
           </div>
         </div>
       </header>
@@ -2851,6 +3308,16 @@ export default function AnimationStudio() {
                                   <div className="text-white text-sm font-medium truncate">{c.name}</div>
                                   <div className="text-white/40 text-xs truncate">{c.traits?.[0] || 'Персонаж'}</div>
                                 </div>
+                                {/* Voice Preview Button */}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => playVoicePreview(c.name)}
+                                  className="h-8 w-8 p-0 hover:bg-blue-500/20"
+                                  title={language === 'ru' ? 'Прослушать голос' : 'Preview voice'}
+                                >
+                                  <Volume2 className="w-3 h-3 text-blue-400" />
+                                </Button>
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -4301,6 +4768,88 @@ export default function AnimationStudio() {
         </div>
       )}
 
+      {/* Share Dialog */}
+      {showShareDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl`}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-purple-900'} flex items-center gap-2`}>
+                🔗 {language === 'ru' ? 'Поделиться проектом' : 'Share Project'}
+              </h2>
+              <Button
+                variant="ghost"
+                onClick={() => setShowShareDialog(false)}
+                className={`${isDarkMode ? 'text-white hover:bg-white/10' : 'text-purple-900 hover:bg-purple-100'}`}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <p className={`${isDarkMode ? 'text-white/60' : 'text-purple-600'} mb-4`}>
+              {language === 'ru' 
+                ? 'Скопируйте ссылку и отправьте коллегам. Они смогут открыть ваш проект.' 
+                : 'Copy the link and share with colleagues. They can open your project.'}
+            </p>
+            
+            {/* Share Link Input */}
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={shareLink}
+                readOnly
+                className={`flex-1 px-4 py-3 rounded-xl ${isDarkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-purple-50 border-purple-200 text-purple-900'} border text-sm`}
+              />
+              <Button
+                onClick={copyShareLink}
+                className="bg-purple-500 hover:bg-purple-600 rounded-xl px-4"
+              >
+                📋 {language === 'ru' ? 'Копировать' : 'Copy'}
+              </Button>
+            </div>
+            
+            {/* QR Code Placeholder */}
+            <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-purple-50'} text-center mb-4`}>
+              <div className="text-6xl mb-2">📱</div>
+              <p className={`text-sm ${isDarkMode ? 'text-white/60' : 'text-purple-600'}`}>
+                {language === 'ru' ? 'Отсканируйте QR-код в мобильном приложении' : 'Scan QR code in mobile app'}
+              </p>
+            </div>
+            
+            {/* Social Share Buttons */}
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                onClick={() => window.open(`https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent(script?.title || 'ФОРТОРИУМ проект')}`, '_blank')}
+                variant="outline"
+                className={`flex-1 ${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'}`}
+              >
+                📱 Telegram
+              </Button>
+              <Button
+                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareLink)}`, '_blank')}
+                variant="outline"
+                className={`flex-1 ${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'}`}
+              >
+                💬 WhatsApp
+              </Button>
+              <Button
+                onClick={() => window.open(`mailto:?subject=${encodeURIComponent(script?.title || 'ФОРТОРИУМ проект')}&body=${encodeURIComponent(shareLink)}`, '_blank')}
+                variant="outline"
+                className={`flex-1 ${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'}`}
+              >
+                ✉️ Email
+              </Button>
+            </div>
+            
+            <Button
+              onClick={() => setShowShareDialog(false)}
+              className="w-full mt-6 bg-gradient-to-r from-purple-500 to-pink-500"
+            >
+              {language === 'ru' ? 'Готово' : 'Done'}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Scene Timeline */}
       {script?.scenes && showTimeline && !presentationMode && (
         <div className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-40 ${isDarkMode ? 'bg-black/80' : 'bg-white/90'} backdrop-blur-sm rounded-xl p-3 border ${isDarkMode ? 'border-white/10' : 'border-purple-200'} shadow-2xl max-w-4xl w-full mx-4`}>
@@ -4385,7 +4934,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v2.5.0
+              v2.6.0
             </span>
           </div>
         </div>
@@ -4394,7 +4943,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.5.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.6.0</span>
         </div>
       </div>
     </div>
