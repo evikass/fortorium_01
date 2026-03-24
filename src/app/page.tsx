@@ -147,6 +147,13 @@ export default function AnimationStudio() {
   const [directorReport, setDirectorReport] = useState<string>('');
   const [directorAnalysis, setDirectorAnalysis] = useState<any>(null);
   
+  // Работа агентов
+  const [workProgress, setWorkProgress] = useState<string>('');
+  const [workResult, setWorkResult] = useState<any>(null);
+  const [script, setScript] = useState<any>(null);
+  const [storyboard, setStoryboard] = useState<any>(null);
+  const [tasks, setTasks] = useState<any[]>([]);
+  
   // Модальные окна
   const [showHireDialog, setShowHireDialog] = useState(false);
   const [showCandidateDialog, setShowCandidateDialog] = useState(false);
@@ -203,10 +210,162 @@ export default function AnimationStudio() {
     }
   }, []);
 
+  // Загрузка выполненных задач
+  const fetchTasks = useCallback(async () => {
+    try {
+      const res = await fetch('/api/work');
+      const data = await res.json();
+      if (data.success) {
+        setTasks(data.tasks);
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    }
+  }, []);
+
+  // Запуск полного пайплайна производства
+  const runProduction = async (projectId: string) => {
+    setIsLoading(true);
+    setWorkProgress('🚀 Запускаем производство...');
+    setWorkResult(null);
+    
+    try {
+      const res = await fetch('/api/work', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'run_full_pipeline',
+          projectId
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setWorkProgress('');
+        setWorkResult(data.results);
+        
+        if (data.results.script) {
+          setScript(data.results.script);
+        }
+        if (data.results.storyboard) {
+          setStoryboard(data.results.storyboard);
+        }
+        
+        fetchTasks();
+        fetchDirectorReport();
+      } else {
+        setWorkProgress(`❌ Ошибка: ${data.error}`);
+      }
+    } catch (error) {
+      setWorkProgress(`❌ Ошибка: ${error}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Запуск сценариста
+  const runWriter = async () => {
+    if (!newProject.title || !newProject.description) {
+      alert('Сначала создайте проект или заполните название и описание');
+      return;
+    }
+    
+    setIsLoading(true);
+    setWorkProgress('✍️ Сценарист работает...');
+    
+    try {
+      // Сначала создаём проект если его нет
+      let projectId = projects[0]?.id;
+      
+      if (!projectId) {
+        const createRes = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newProject)
+        });
+        const createData = await createRes.json();
+        if (createData.success) {
+          projectId = createData.project.id;
+          setProjects([createData.project, ...projects]);
+        }
+      }
+      
+      const res = await fetch('/api/work', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'write_script',
+          projectId
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setWorkProgress(`✅ ${data.message}`);
+        setScript(data.script);
+        fetchTasks();
+      } else {
+        setWorkProgress(`❌ ${data.error}`);
+      }
+    } catch (error) {
+      setWorkProgress(`❌ Ошибка: ${error}`);
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => setWorkProgress(''), 3000);
+    }
+  };
+
+  // Запуск художника
+  const runArtist = async () => {
+    if (!script?.scenes?.[0]) {
+      alert('Сначала нужен сценарий!');
+      return;
+    }
+    
+    setIsLoading(true);
+    setWorkProgress('🎨 Художник создаёт раскадровку...');
+    
+    try {
+      const firstScene = script.scenes[0];
+      
+      const res = await fetch('/api/work', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_storyboard',
+          projectId: projects[0]?.id || 'default',
+          data: {
+            sceneTitle: firstScene.title,
+            sceneDescription: firstScene.description,
+            style: newProject.style
+          }
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setWorkProgress(`✅ ${data.message}`);
+        setStoryboard(data.image);
+        fetchTasks();
+      } else {
+        setWorkProgress(`❌ ${data.error}`);
+      }
+    } catch (error) {
+      setWorkProgress(`❌ Ошибка: ${error}`);
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => setWorkProgress(''), 3000);
+    }
+  };
+
   useEffect(() => {
     fetchStudioData();
     fetchDirectorReport();
     fetchPendingCandidates();
+    fetchTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -770,7 +929,15 @@ export default function AnimationStudio() {
                   />
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
+                  <Button
+                    onClick={runWriter}
+                    disabled={isLoading || !newProject.title || !newProject.description}
+                    variant="outline"
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
+                    ✍️ Сценарий
+                  </Button>
                   <Button
                     onClick={createProject}
                     disabled={isLoading || !newProject.title || !newProject.description}
@@ -782,6 +949,109 @@ export default function AnimationStudio() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Production Section - Работа агентов */}
+            {(workProgress || script || storyboard || tasks.length > 0) && (
+              <Card className="bg-white/5 border-white/10 border-2 border-green-500/30">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 flex items-center justify-center text-2xl">
+                      🎬
+                    </div>
+                    <div className="flex-1">
+                      <CardTitle className="text-white text-lg">Производство</CardTitle>
+                      <CardDescription className="text-white/60">
+                        Результаты работы AI-агентов
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Progress */}
+                  {workProgress && (
+                    <div className="p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-400 text-sm flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {workProgress}
+                    </div>
+                  )}
+
+                  {/* Script Result */}
+                  {script && (
+                    <div className="p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg border border-amber-500/20">
+                      <h4 className="text-amber-400 font-medium mb-3 flex items-center gap-2">
+                        ✍️ Сценарий: {script.title}
+                      </h4>
+                      <p className="text-white/80 text-sm mb-3">{script.logline}</p>
+                      
+                      {/* Characters */}
+                      {script.characters?.length > 0 && (
+                        <div className="mb-3">
+                          <h5 className="text-white/60 text-xs mb-2">Персонажи:</h5>
+                          <div className="flex flex-wrap gap-2">
+                            {script.characters.map((c: any, i: number) => (
+                              <Badge key={i} variant="outline" className="border-amber-500/30 text-amber-300">
+                                {c.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Scenes */}
+                      {script.scenes?.length > 0 && (
+                        <div className="space-y-2">
+                          <h5 className="text-white/60 text-xs">Сцены ({script.scenes.length}):</h5>
+                          {script.scenes.map((scene: any, i: number) => (
+                            <div key={i} className="p-2 bg-white/5 rounded text-xs">
+                              <span className="text-white font-medium">Сцена {scene.number}:</span>{' '}
+                              <span className="text-white/70">{scene.title}</span>
+                              <span className="text-white/50 ml-2">({scene.duration}с)</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="mt-3 text-white/50 text-xs">
+                        Общая длительность: {script.totalDuration}с | Настроение: {script.mood}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Storyboard Result */}
+                  {storyboard?.success && (
+                    <div className="p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
+                      <h4 className="text-purple-400 font-medium mb-3 flex items-center gap-2">
+                        🎨 Раскадровка
+                      </h4>
+                      <img 
+                        src={storyboard.imageUrl} 
+                        alt="Раскадровка" 
+                        className="w-full rounded-lg border border-white/10"
+                      />
+                      <p className="text-white/50 text-xs mt-2">Prompt: {storyboard.prompt}</p>
+                    </div>
+                  )}
+
+                  {/* Tasks History */}
+                  {tasks.length > 0 && (
+                    <div>
+                      <h5 className="text-white/60 text-xs mb-2">Последние задачи:</h5>
+                      <div className="space-y-1">
+                        {tasks.slice(0, 5).map((task, i) => (
+                          <div key={i} className="flex items-center gap-2 p-2 bg-white/5 rounded text-xs">
+                            <Badge className={task.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}>
+                              {task.status}
+                            </Badge>
+                            <span className="text-white/80">{task.title}</span>
+                            <span className="text-white/40 ml-auto">{task.agent?.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Team Tab */}
