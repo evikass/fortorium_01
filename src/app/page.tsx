@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Select,
   SelectContent,
@@ -132,6 +133,7 @@ export default function AnimationStudio() {
   // Состояния
   const [activeTab, setActiveTab] = useState('studio');
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
   
   // Данные студии
   const [director, setDirector] = useState<Director>({ name: 'Директор', status: 'active', budget: 0, reputation: 50 });
@@ -371,7 +373,11 @@ export default function AnimationStudio() {
   // Запуск сценариста
   const runWriter = async () => {
     if (!newProject.title || !newProject.description) {
-      alert('Сначала создайте проект или заполните название и описание');
+      toast({
+        title: "⚠️ Внимание",
+        description: "Сначала заполните название и описание проекта",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -431,7 +437,11 @@ export default function AnimationStudio() {
   // Запуск художника
   const runArtist = async () => {
     if (!script?.scenes?.[0]) {
-      alert('Сначала нужен сценарий!');
+      toast({
+        title: "⚠️ Внимание",
+        description: "Сначала нужен сценарий! Нажмите 'Сценарий' или 'Запустить производство'",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -588,7 +598,11 @@ export default function AnimationStudio() {
   // Экспорт проекта
   const exportProject = () => {
     if (!script) {
-      alert('Нет данных для экспорта');
+      toast({
+        title: "⚠️ Нет данных",
+        description: "Сначала создайте сценарий для экспорта",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -618,7 +632,11 @@ export default function AnimationStudio() {
   // Генерация видео из изображений
   const generateVideo = async () => {
     if (!script?.scenes || Object.keys(sceneImages).length === 0) {
-      alert('Сначала сгенерируйте изображения для сцен');
+      toast({
+        title: "⚠️ Недостаточно данных",
+        description: "Сначала сгенерируйте изображения для сцен (кнопка 🎨)",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -680,7 +698,7 @@ export default function AnimationStudio() {
     if (!script) return;
     
     const projectData = {
-      version: '1.6.0',
+      version: '1.7.0',
       savedAt: new Date().toISOString(),
       project: newProject,
       script,
@@ -690,7 +708,10 @@ export default function AnimationStudio() {
     };
     
     localStorage.setItem('fortorium_current_project', JSON.stringify(projectData));
-    alert('✅ Проект сохранён в браузере!');
+    toast({
+      title: "💾 Сохранено",
+      description: "Проект сохранён в браузере",
+    });
   };
   
   // Загрузка из localStorage
@@ -721,7 +742,10 @@ export default function AnimationStudio() {
       setStoryboard(null);
       setSceneImages({});
       setWorkResult(null);
-      alert('🗑️ Проект удалён из браузера');
+      toast({
+        title: "🗑️ Удалено",
+        description: "Сохранённый проект удалён из браузера",
+      });
     }
   };
 
@@ -797,13 +821,24 @@ export default function AnimationStudio() {
       const res = await fetch('/api/init-db');
       const data = await res.json();
       if (data.success) {
-        alert('✅ База данных инициализирована!');
+        toast({
+          title: "✅ Готово",
+          description: "База данных инициализирована!",
+        });
         fetchStudioData();
       } else {
-        alert('❌ Ошибка: ' + data.error);
+        toast({
+          title: "❌ Ошибка",
+          description: data.error,
+          variant: "destructive"
+        });
       }
     } catch (error) {
-      alert('❌ Ошибка инициализации');
+      toast({
+        title: "❌ Ошибка",
+        description: "Не удалось инициализировать базу данных",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -2026,10 +2061,17 @@ export default function AnimationStudio() {
                               setStoryboard(data.storyboard);
                               setSceneImages(data.sceneImages || {});
                               setWorkResult({ animation: data.animation, agents: data.agents });
-                              alert('✅ Проект загружен!');
+                              toast({
+                                title: "✅ Проект загружен",
+                                description: `${data.project.title} успешно загружен`,
+                              });
                             }
                           } catch (err) {
-                            alert('❌ Ошибка загрузки файла');
+                            toast({
+                              title: "❌ Ошибка",
+                              description: "Не удалось загрузить файл. Проверьте формат.",
+                              variant: "destructive"
+                            });
                           }
                         };
                         reader.readAsText(file);
@@ -2298,7 +2340,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v1.6.0
+              v1.7.0
             </span>
           </div>
         </div>
@@ -2307,7 +2349,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v1.6.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v1.7.0</span>
         </div>
       </div>
     </div>
