@@ -903,6 +903,30 @@ export default function AnimationStudio() {
                   </div>
                 </div>
 
+                {/* Quick Stats Dashboard */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+                  <div className="p-2 bg-white/5 rounded-lg text-center">
+                    <div className="text-2xl">📝</div>
+                    <div className="text-white font-bold">{tasks.filter(t => t.type === 'script').length}</div>
+                    <div className="text-white/50 text-xs">Сценариев</div>
+                  </div>
+                  <div className="p-2 bg-white/5 rounded-lg text-center">
+                    <div className="text-2xl">🎨</div>
+                    <div className="text-white font-bold">{Object.keys(sceneImages).length}</div>
+                    <div className="text-white/50 text-xs">Изображений</div>
+                  </div>
+                  <div className="p-2 bg-white/5 rounded-lg text-center">
+                    <div className="text-2xl">🎬</div>
+                    <div className="text-white font-bold">{projects.filter(p => p.status === 'in_progress').length}</div>
+                    <div className="text-white/50 text-xs">В работе</div>
+                  </div>
+                  <div className="p-2 bg-white/5 rounded-lg text-center">
+                    <div className="text-2xl">✅</div>
+                    <div className="text-white font-bold">{projects.filter(p => p.status === 'completed').length}</div>
+                    <div className="text-white/50 text-xs">Завершено</div>
+                  </div>
+                </div>
+
                 {/* Director Analysis */}
                 {directorAnalysis && (
                   <div className="space-y-4">
@@ -1773,10 +1797,49 @@ export default function AnimationStudio() {
           <TabsContent value="projects" className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-white">Проекты студии</h2>
-              <Button onClick={() => setActiveTab('studio')} className="bg-gradient-to-r from-purple-500 to-pink-500">
-                <Plus className="w-4 h-4 mr-2" />
-                Новый проект
-              </Button>
+              <div className="flex gap-2">
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          try {
+                            const data = JSON.parse(event.target?.result as string);
+                            if (data.project && data.script) {
+                              setNewProject({
+                                title: data.project.title,
+                                description: data.project.description,
+                                style: data.project.style || 'disney',
+                                duration: 30
+                              });
+                              setScript(data.script);
+                              setStoryboard(data.storyboard);
+                              setSceneImages(data.sceneImages || {});
+                              setWorkResult({ animation: data.animation, agents: data.agents });
+                              alert('✅ Проект загружен!');
+                            }
+                          } catch (err) {
+                            alert('❌ Ошибка загрузки файла');
+                          }
+                        };
+                        reader.readAsText(file);
+                      }
+                    }}
+                  />
+                  <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                    📂 Загрузить проект
+                  </Button>
+                </label>
+                <Button onClick={() => setActiveTab('studio')} className="bg-gradient-to-r from-purple-500 to-pink-500">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Новый проект
+                </Button>
+              </div>
             </div>
 
             {projects.length === 0 ? (
