@@ -2,20 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import ZAI from 'z-ai-web-dev-sdk';
 import { db } from '@/lib/db';
 
-// Инициализация AI - z-ai-web-dev-sdk уже настроен!
-let zaiInstance: Awaited<ReturnType<typeof ZAI.create>> | null = null;
+// Увеличиваем таймаут для Vercel (требует Pro план для больше 10 сек)
+export const maxDuration = 60; // 60 секунд максимум
 
+// ============================================
+// AI ИНИЦИАЛИЗАЦИЯ
+// ============================================
 async function getAI() {
-  if (!zaiInstance) {
-    try {
-      zaiInstance = await ZAI.create();
-      console.log('✅ AI SDK инициализирован успешно');
-    } catch (e) {
-      console.error('❌ Ошибка инициализации AI SDK:', e);
-      return null;
-    }
+  try {
+    console.log('🔄 Инициализация AI SDK...');
+    const zai = await ZAI.create();
+    console.log('✅ AI SDK инициализирован успешно');
+    return zai;
+  } catch (e) {
+    console.error('❌ Ошибка инициализации AI SDK:', e);
+    return null;
   }
-  return zaiInstance;
 }
 
 // ============================================
@@ -66,7 +68,7 @@ async function writerAgent(projectTitle: string, projectDescription: string, sty
       });
 
       const content = response.choices[0]?.message?.content || '';
-      console.log('📝 AI ответ:', content.substring(0, 200) + '...');
+      console.log('📝 AI ответ получен, длина:', content.length);
       
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       
@@ -165,36 +167,49 @@ async function artistAgent(sceneTitle: string, sceneDescription: string, style: 
   const stylePrompt = stylePrompts[style] || stylePrompts.disney;
   const imagePrompt = `${stylePrompt}, ${sceneDescription}, scene from animation titled "${sceneTitle}", high quality, detailed, professional illustration`;
   
+  console.log('🖼️ Промпт для генерации:', imagePrompt.substring(0, 100) + '...');
+  
   // Если есть AI - генерируем изображение
   if (zai) {
     try {
-      console.log('🖼️ Генерация изображения:', imagePrompt.substring(0, 100) + '...');
+      console.log('⏳ Начинаю генерацию изображения...');
       
+      const startTime = Date.now();
       const imageResponse = await zai.images.generations.create({
         prompt: imagePrompt,
         size: '1024x1024'
       });
+      const elapsed = Date.now() - startTime;
       
-      console.log('✅ Изображение создано успешно');
+      console.log(`✅ Изображение создано за ${elapsed}ms`);
+      console.log('📊 Размер base64:', imageResponse.data[0].base64?.length || 0);
       
-      return {
-        success: true,
-        imageUrl: `data:image/png;base64,${imageResponse.data[0].base64}`,
-        prompt: imagePrompt
-      };
-    } catch (error) {
-      console.error('❌ Ошибка генерации изображения:', error);
+      if (imageResponse.data[0].base64) {
+        return {
+          success: true,
+          imageUrl: `data:image/png;base64,${imageResponse.data[0].base64}`,
+          prompt: imagePrompt,
+          generationTime: elapsed
+        };
+      } else {
+        console.error('❌ Base64 пустой!');
+      }
+    } catch (error: any) {
+      console.error('❌ Ошибка генерации изображения:', error?.message || error);
+      console.error('Stack:', error?.stack);
     }
+  } else {
+    console.log('⚠️ AI не инициализирован');
   }
   
-  console.log('⚠️ Изображение не сгенерировано');
+  console.log('⚠️ Возвращаю заглушку без изображения');
   
   // Fallback - возвращаем заглушку
   return {
-    success: true,
+    success: false,
     imageUrl: null,
     prompt: imagePrompt,
-    message: 'Изображение будет сгенерировано при наличии AI'
+    message: 'Не удалось сгенерировать изображение. Попробуйте ещё раз.'
   };
 }
 
@@ -294,11 +309,14 @@ export async function GET(request: NextRequest) {
 
 // POST - выполнить работу
 export async function POST(request: NextRequest) {
+  console.log('='.repeat(50));
+  console.log('📥 Новый запрос к API work');
+  
   try {
     const body = await request.json();
     const { action, projectId, agentId, data } = body;
     
-    console.log('📋 Запрос:', action, 'projectId:', projectId);
+    console.log('📋 Action:', action, '| ProjectId:', projectId);
     
     switch (action) {
       // ========================================
@@ -421,68 +439,18 @@ export async function POST(request: NextRequest) {
           });
         }
         
+        console.log('📤 Возвращаю результат storyboard:', { 
+          success: result.success, 
+          hasImage: !!result.imageUrl,
+          imageLength: result.imageUrl?.length || 0
+        });
+        
         return NextResponse.json({
           success: true,
           message: `🎨 ${artistName} создал раскадровку!`,
           image: result,
           task,
           virtualAgent: virtualArtist
-        });
-      }
-      
-      // ========================================
-      // АНИМАТОР - описать анимацию
-      // ========================================
-      case 'plan_animation': {
-        const { scenes } = data;
-        
-        let animator = await db.hiredAgent.findFirst({
-          where: { role: 'animator', status: 'idle' }
-        });
-        
-        const virtualAnimator = !animator;
-        const animatorName = animator?.name || 'AI-Аниматор';
-        const animatorId = animator?.id;
-        
-        if (animator) {
-          await db.hiredAgent.update({
-            where: { id: animator.id },
-            data: { status: 'working' }
-          });
-        }
-        
-        const animation = await animatorAgent(scenes);
-        
-        const taskData: any = {
-          projectId: projectId || 'default',
-          type: 'animation',
-          title: 'План анимации',
-          description: 'Описание анимационных сцен',
-          status: 'completed',
-          input: JSON.stringify({ scenes }),
-          output: JSON.stringify(animation),
-          completedAt: new Date()
-        };
-        
-        if (animatorId) {
-          taskData.agentId = animatorId;
-        }
-        
-        const task = await db.hiredAgentTask.create({ data: taskData });
-        
-        if (animator) {
-          await db.hiredAgent.update({
-            where: { id: animator.id },
-            data: { status: 'idle', tasksCompleted: { increment: 1 } }
-          });
-        }
-        
-        return NextResponse.json({
-          success: true,
-          message: `🎬 ${animatorName} создал план анимации!`,
-          animation,
-          task,
-          virtualAgent: virtualAnimator
         });
       }
       
@@ -510,6 +478,7 @@ export async function POST(request: NextRequest) {
         };
         
         // 1. Сценарист
+        console.log('📝 Шаг 1: Генерация сценария...');
         let writer = await db.hiredAgent.findFirst({
           where: { role: 'writer', status: 'idle' }
         });
@@ -534,6 +503,7 @@ export async function POST(request: NextRequest) {
         }
         
         // 2. Художник - для первой сцены
+        console.log('🎨 Шаг 2: Генерация раскадровки...');
         let artist = await db.hiredAgent.findFirst({
           where: { role: 'artist', status: 'idle' }
         });
@@ -556,6 +526,12 @@ export async function POST(request: NextRequest) {
             project.style || 'disney'
           );
           
+          console.log('📊 Storyboard результат:', {
+            success: results.storyboard.success,
+            hasImage: !!results.storyboard.imageUrl,
+            imageLength: results.storyboard.imageUrl?.length || 0
+          });
+          
           if (artist) {
             await db.hiredAgent.update({
               where: { id: artist.id },
@@ -565,6 +541,7 @@ export async function POST(request: NextRequest) {
         }
         
         // 3. Аниматор
+        console.log('🎬 Шаг 3: Генерация плана анимации...');
         let animator = await db.hiredAgent.findFirst({
           where: { role: 'animator', status: 'idle' }
         });
@@ -597,6 +574,7 @@ export async function POST(request: NextRequest) {
         });
         
         console.log('✅ Полный пайплайн завершён');
+        console.log('='.repeat(50));
         
         return NextResponse.json({
           success: true,
@@ -610,7 +588,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Неизвестное действие' }, { status: 400 });
     }
   } catch (error) {
-    console.error('❌ Ошибка:', error);
+    console.error('❌ Критическая ошибка:', error);
     return NextResponse.json({ 
       success: false, 
       error: String(error) 
