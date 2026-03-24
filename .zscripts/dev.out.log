@@ -354,3 +354,63 @@ Error fetching hired agents: TypeError: Cannot read properties of undefined (rea
   10 |           where: { status: 'completed' },
  GET /api/agents/hire 500 in 91ms (compile: 2ms, render: 88ms)
  GET /api/director 200 in 16.1s (compile: 3ms, render: 16.1s)
+✓ Compiled in 168ms
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 55ms (compile: 1871µs, render: 54ms)
+ GET /api/director 200 in 6.6s (compile: 6ms, render: 6.6s)
+✓ Compiled in 122ms
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 69ms (compile: 1387µs, render: 68ms)
+ GET /api/director 200 in 9.7s (compile: 1949µs, render: 9.7s)
+✓ Compiled in 116ms
+ GET / 200 in 79ms (compile: 49ms, render: 30ms)
+✓ Compiled in 114ms
+ GET / 200 in 70ms (compile: 48ms, render: 21ms)
+ GET / 200 in 168ms (compile: 3ms, render: 166ms)
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 86ms (compile: 1679µs, render: 85ms)
+Failed to make API request: Error: API request failed with status 429: {"error":{"code":"1302","message":"您的账户已达到速率限制，请您控制请求频率"}}
+    at async DirectorAgent.generateDailyReport (src/lib/agents/director-agent.ts:164:22)
+    at async GET (src/app/api/director/route.ts:12:20)
+  162 | 3. Рекомендации на сегодня`;
+  163 |
+> 164 |     const response = await this.zai!.chat.completions.create({
+      |                      ^
+  165 |       messages: [
+  166 |         { role: 'system', content: DIRECTOR_SYSTEM_PROMPT },
+  167 |         { role: 'user', content: prompt }
+Director Error: Error: API request failed with status 429: {"error":{"code":"1302","message":"您的账户已达到速率限制，请您控制请求频率"}}
+    at async DirectorAgent.generateDailyReport (src/lib/agents/director-agent.ts:164:22)
+    at async GET (src/app/api/director/route.ts:12:20)
+  162 | 3. Рекомендации на сегодня`;
+  163 |
+> 164 |     const response = await this.zai!.chat.completions.create({
+      |                      ^
+  165 |       messages: [
+  166 |         { role: 'system', content: DIRECTOR_SYSTEM_PROMPT },
+  167 |         { role: 'user', content: prompt }
+ GET /api/director 500 in 267ms (compile: 1521µs, render: 266ms)

@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { createAgent } from '@/lib/agents';
 
 // GET /api/projects - получить все проекты
 export async function GET() {
   try {
     const projects = await db.animationProject.findMany({
       include: {
-        tasks: {
-          include: {
-            agent: true
-          }
-        },
         scenes: {
           orderBy: { order: 'asc' }
         },
@@ -36,6 +30,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, description, style, duration, useBlender } = body;
 
+    if (!title || !description) {
+      return NextResponse.json(
+        { success: false, error: 'Укажите название и описание' },
+        { status: 400 }
+      );
+    }
+
     // Создаём проект
     const project = await db.animationProject.create({
       data: {
@@ -48,97 +49,24 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Создаём агентов для проекта
-    const agentRoles = ['producer', 'writer', 'artist', 'voice', 'editor'] as const;
-    
-    for (const role of agentRoles) {
-      await db.agent.upsert({
-        where: { id: role },
-        create: {
-          id: role,
-          name: getAgentName(role),
-          role: role,
-          status: 'idle'
-        },
-        update: { status: 'idle' }
-      });
-    }
-
-    // Если нужен Blender, создаём соответствующего агента
-    if (useBlender) {
-      await db.agent.upsert({
-        where: { id: 'blender' },
-        create: {
-          id: 'blender',
-          name: 'Blender Оператор',
-          role: 'blender',
-          status: 'idle'
-        },
-        update: { status: 'idle' }
-      });
-    }
-
-    // Запускаем агента-продюсера для планирования
-    const producer = createAgent('producer');
-    await producer.initialize();
-    
-    const planResult = await producer.execute({
-      type: 'plan_project',
+    // Добавляем лог создания
+    await db.projectLog.create({
       data: {
-        title,
-        description,
-        style: style || 'disney',
-        duration: duration || 30
+        projectId: project.id,
+        level: 'info',
+        message: `Проект "${title}" создан`
       }
     });
 
-    // Если планирование успешно, создаём сцены
-    if (planResult.success && planResult.data?.plan?.scenes) {
-      for (const scene of planResult.data.plan.scenes) {
-        await db.scene.create({
-          data: {
-            projectId: project.id,
-            order: scene.order,
-            title: scene.title,
-            description: scene.description,
-            duration: scene.duration
-          }
-        });
-      }
-
-      // Добавляем лог
-      await db.projectLog.create({
-        data: {
-          projectId: project.id,
-          level: 'info',
-          message: 'Проект успешно спланирован',
-          metadata: JSON.stringify({ scenesCount: planResult.data.plan.scenes.length })
-        }
-      });
-    }
-
     return NextResponse.json({ 
       success: true, 
-      project,
-      plan: planResult.data?.plan
+      project 
     });
   } catch (error) {
     console.error('Error creating project:', error);
     return NextResponse.json(
-      { success: false, error: 'Ошибка при создании проекта' },
+      { success: false, error: 'Ошибка при создании проекта: ' + (error instanceof Error ? error.message : 'неизвестная ошибка') },
       { status: 500 }
     );
   }
-}
-
-function getAgentName(role: string): string {
-  const names: Record<string, string> = {
-    producer: 'Продюсер',
-    writer: 'Сценарист',
-    artist: 'Художник',
-    voice: 'Озвучка',
-    editor: 'Монтажёр',
-    blender: 'Blender Оператор'
-  };
-  return names[role] || role;
 }
