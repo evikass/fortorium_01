@@ -163,6 +163,13 @@ export default function AnimationStudio() {
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [audioEnabled, setAudioEnabled] = useState(false);
   
+  // Видео
+  const [generatingVideo, setGeneratingVideo] = useState(false);
+  const [projectVideo, setProjectVideo] = useState<string | null>(null);
+  
+  // Проекты для сохранения
+  const [savedProjects, setSavedProjects] = useState<any[]>([]);
+  
   // Модальные окна
   const [showHireDialog, setShowHireDialog] = useState(false);
   const [showCandidateDialog, setShowCandidateDialog] = useState(false);
@@ -487,6 +494,83 @@ export default function AnimationStudio() {
     } catch (error) {
       console.error('TTS error:', error);
       setPlayingAudio(null);
+    }
+  };
+
+  // Экспорт проекта
+  const exportProject = () => {
+    if (!script) {
+      alert('Нет данных для экспорта');
+      return;
+    }
+    
+    const exportData = {
+      project: {
+        title: newProject.title,
+        description: newProject.description,
+        style: newProject.style,
+        createdAt: new Date().toISOString()
+      },
+      script,
+      storyboard,
+      sceneImages,
+      animation: workResult?.animation,
+      agents: workResult?.agents
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fortorium_${newProject.title.replace(/\s+/g, '_')}_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Генерация видео из изображений
+  const generateVideo = async () => {
+    if (!script?.scenes || Object.keys(sceneImages).length === 0) {
+      alert('Сначала сгенерируйте изображения для сцен');
+      return;
+    }
+    
+    setGeneratingVideo(true);
+    setWorkProgress('🎬 Генерация видео...');
+    
+    try {
+      // Собираем все изображения
+      const images = Object.entries(sceneImages)
+        .filter(([_, img]) => img?.imageUrl)
+        .map(([idx, img]) => ({
+          sceneIndex: parseInt(idx),
+          imageUrl: img.imageUrl,
+          duration: script.scenes[parseInt(idx)]?.duration || 5
+        }));
+      
+      const res = await fetch('/api/video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          images,
+          projectId: projects[0]?.id,
+          title: script.title
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success && data.videoUrl) {
+        setProjectVideo(data.videoUrl);
+        setWorkProgress('✅ Видео готово!');
+      } else {
+        setWorkProgress('⚠️ Видео генерируется в фоновом режиме');
+      }
+    } catch (error) {
+      console.error('Video generation error:', error);
+      setWorkProgress('❌ Ошибка генерации видео');
+    } finally {
+      setGeneratingVideo(false);
+      setTimeout(() => setWorkProgress(''), 3000);
     }
   };
 
@@ -1389,6 +1473,49 @@ export default function AnimationStudio() {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Export & Video Actions */}
+                  {script && (
+                    <div className="flex gap-2 pt-4 border-t border-white/10">
+                      <Button
+                        onClick={exportProject}
+                        variant="outline"
+                        className="flex-1 border-green-500/30 text-green-300 hover:bg-green-500/10"
+                      >
+                        📥 Экспорт JSON
+                      </Button>
+                      <Button
+                        onClick={generateVideo}
+                        disabled={generatingVideo || Object.keys(sceneImages).length === 0}
+                        className="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+                      >
+                        {generatingVideo ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Создаём видео...
+                          </>
+                        ) : (
+                          <>
+                            🎬 Создать видео
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Video Result */}
+                  {projectVideo && (
+                    <div className="p-4 bg-gradient-to-r from-pink-500/10 to-rose-500/10 rounded-lg border border-pink-500/20">
+                      <h4 className="text-pink-400 font-medium mb-3 flex items-center gap-2">
+                        🎬 Готовое видео
+                      </h4>
+                      <video 
+                        src={projectVideo} 
+                        controls 
+                        className="w-full rounded-lg border border-white/10"
+                      />
                     </div>
                   )}
                 </CardContent>
