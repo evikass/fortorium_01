@@ -146,11 +146,187 @@ const GENRES = [
   { value: 'nature', label: 'Природа', icon: '🌿' },
 ];
 
+// ============================================
+// СИСТЕМА ПЕРЕВОДОВ (I18N)
+// ============================================
+const translations = {
+  ru: {
+    // Header
+    appTitle: 'ФОРТОРИУМ',
+    appSubtitle: 'Анимационная студия будущего',
+    directorOnline: 'Директор онлайн',
+    directorBusy: 'Директор занят',
+    projects: 'проектов',
+    agents: 'агентов',
+    
+    // Tabs
+    studio: 'Студия',
+    production: 'Производство',
+    projectsTab: 'Проекты',
+    team: 'Команда',
+    
+    // Studio
+    newProject: 'Новый проект',
+    projectName: 'Название проекта',
+    projectNamePlaceholder: 'Название вашего мультфильма...',
+    projectIdea: 'Описание идеи',
+    projectIdeaPlaceholder: 'Кот-астронавт отправляется на Луну...',
+    animationStyle: 'Стиль анимации',
+    duration: 'Длительность (сек)',
+    createScript: '📝 Сценарий',
+    runProduction: '🚀 Запустить производство',
+    demoProject: '🎭 Демо',
+    generateIdeas: '💡 Идеи',
+    
+    // Production
+    script: 'Сценарий',
+    characters: 'Персонажи',
+    scenes: 'Сцены',
+    generateImages: '🎨 Все изображения',
+    generateVideo: '🎬 Видео',
+    slideshow: '🎬 Слайд-шоу',
+    
+    // Actions
+    save: '💾 Сохранить',
+    export: '📤 Экспорт',
+    import: '📥 Импорт',
+    undo: '↩️ Отменить',
+    redo: '↪️ Повторить',
+    copy: '📋 Копировать',
+    clear: '🗑️ Очистить',
+    printPdf: '📄 Печать/PDF',
+    
+    // Statistics
+    statistics: 'Статистика проекта',
+    progress: 'Прогресс',
+    imagesGenerated: 'Изображений',
+    charactersGenerated: 'Персонажей',
+    style: 'Стиль',
+    
+    // Scene
+    scene: 'Сцена',
+    location: 'Локация',
+    action: 'Действие',
+    dialogue: 'Диалог',
+    
+    // Notes
+    notes: 'Заметки',
+    addNote: 'Добавить заметку',
+    sceneNotes: 'Заметки к сцене',
+    
+    // Presentation
+    presentationMode: 'Режим презентации',
+    exitPresentation: 'Выйти (Esc)',
+    prevScene: '◀ Назад',
+    nextScene: 'Вперёд ▶',
+    
+    // Hotkeys
+    hotkeys: 'Горячие клавиши',
+    hotkeysHelp: 'Справка',
+    
+    // Theme
+    darkTheme: '🌙 Тёмная',
+    lightTheme: '☀️ Светлая',
+    
+    // Footer
+    copyright: 'ФОРТОРИУМ © 2024',
+    github: 'GitHub',
+  },
+  en: {
+    // Header
+    appTitle: 'FORTORIUM',
+    appSubtitle: 'Animation Studio of the Future',
+    directorOnline: 'Director Online',
+    directorBusy: 'Director Busy',
+    projects: 'projects',
+    agents: 'agents',
+    
+    // Tabs
+    studio: 'Studio',
+    production: 'Production',
+    projectsTab: 'Projects',
+    team: 'Team',
+    
+    // Studio
+    newProject: 'New Project',
+    projectName: 'Project Name',
+    projectNamePlaceholder: 'Your animation title...',
+    projectIdea: 'Idea Description',
+    projectIdeaPlaceholder: 'An astronaut cat goes to the Moon...',
+    animationStyle: 'Animation Style',
+    duration: 'Duration (sec)',
+    createScript: '📝 Script',
+    runProduction: '🚀 Run Production',
+    demoProject: '🎭 Demo',
+    generateIdeas: '💡 Ideas',
+    
+    // Production
+    script: 'Script',
+    characters: 'Characters',
+    scenes: 'Scenes',
+    generateImages: '🎨 All Images',
+    generateVideo: '🎬 Video',
+    slideshow: '🎬 Slideshow',
+    
+    // Actions
+    save: '💾 Save',
+    export: '📤 Export',
+    import: '📥 Import',
+    undo: '↩️ Undo',
+    redo: '↪️ Redo',
+    copy: '📋 Copy',
+    clear: '🗑️ Clear',
+    printPdf: '📄 Print/PDF',
+    
+    // Statistics
+    statistics: 'Project Statistics',
+    progress: 'Progress',
+    imagesGenerated: 'Images',
+    charactersGenerated: 'Characters',
+    style: 'Style',
+    
+    // Scene
+    scene: 'Scene',
+    location: 'Location',
+    action: 'Action',
+    dialogue: 'Dialogue',
+    
+    // Notes
+    notes: 'Notes',
+    addNote: 'Add Note',
+    sceneNotes: 'Scene Notes',
+    
+    // Presentation
+    presentationMode: 'Presentation Mode',
+    exitPresentation: 'Exit (Esc)',
+    prevScene: '◀ Back',
+    nextScene: 'Next ▶',
+    
+    // Hotkeys
+    hotkeys: 'Hotkeys',
+    hotkeysHelp: 'Help',
+    
+    // Theme
+    darkTheme: '🌙 Dark',
+    lightTheme: '☀️ Light',
+    
+    // Footer
+    copyright: 'FORTORIUM © 2024',
+    github: 'GitHub',
+  }
+};
+
+type Language = 'ru' | 'en';
+
 export default function AnimationStudio() {
   // Состояния
   const [activeTab, setActiveTab] = useState('studio');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  
+  // Язык
+  const [language, setLanguage] = useState<Language>('ru');
+  const t = translations[language];
   
   // Тема (dark/light)
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -163,6 +339,17 @@ export default function AnimationStudio() {
   
   // Навигация по сценам
   const [selectedSceneIndex, setSelectedSceneIndex] = useState(0);
+  
+  // Заметки к сценам
+  const [sceneNotes, setSceneNotes] = useState<Record<number, string[]>>({});
+  const [newNote, setNewNote] = useState('');
+  const [showNotesPanel, setShowNotesPanel] = useState(false);
+  
+  // Режим презентации
+  const [presentationMode, setPresentationMode] = useState(false);
+  
+  // Справка по горячим клавишам
+  const [showHotkeysHelp, setShowHotkeysHelp] = useState(false);
   
   // Данные студии
   const [director, setDirector] = useState<Director>({ name: 'Директор', status: 'active', budget: 0, reputation: 50 });
@@ -461,6 +648,100 @@ export default function AnimationStudio() {
     toast({
       title: isDarkMode ? "☀️ Светлая тема" : "🌙 Тёмная тема",
       description: "Тема интерфейса изменена",
+    });
+  };
+
+  // ============================================
+  // ЗАМЕТКИ К СЦЕНАМ
+  // ============================================
+  const addSceneNote = (sceneIndex: number, note: string) => {
+    if (!note.trim()) return;
+    setSceneNotes(prev => ({
+      ...prev,
+      [sceneIndex]: [...(prev[sceneIndex] || []), note.trim()]
+    }));
+    setNewNote('');
+    toast({
+      title: "📝 Заметка добавлена",
+      description: `Заметка добавлена к сцене ${sceneIndex + 1}`,
+    });
+  };
+
+  const removeSceneNote = (sceneIndex: number, noteIndex: number) => {
+    setSceneNotes(prev => ({
+      ...prev,
+      [sceneIndex]: prev[sceneIndex]?.filter((_, i) => i !== noteIndex) || []
+    }));
+  };
+
+  // ============================================
+  // РЕЖИМ ПРЕЗЕНТАЦИИ
+  // ============================================
+  const startPresentation = () => {
+    if (!script?.scenes || Object.keys(sceneImages).length === 0) {
+      toast({
+        title: language === 'ru' ? "⚠️ Нет изображений" : "⚠️ No Images",
+        description: language === 'ru' ? "Сначала сгенерируйте изображения" : "Generate images first",
+        variant: "destructive"
+      });
+      return;
+    }
+    setSelectedSceneIndex(0);
+    setPresentationMode(true);
+  };
+
+  const nextPresentationScene = () => {
+    if (!script?.scenes) return;
+    if (selectedSceneIndex < script.scenes.length - 1) {
+      setSelectedSceneIndex(prev => prev + 1);
+    }
+  };
+
+  const prevPresentationScene = () => {
+    if (selectedSceneIndex > 0) {
+      setSelectedSceneIndex(prev => prev - 1);
+    }
+  };
+
+  // Автопрокрутка в режиме презентации
+  useEffect(() => {
+    if (!presentationMode || !script?.scenes) return;
+    
+    const timer = setTimeout(() => {
+      nextPresentationScene();
+    }, 8000); // 8 секунд на слайд в презентации
+    
+    return () => clearTimeout(timer);
+  }, [presentationMode, selectedSceneIndex]);
+
+  // ============================================
+  // ГОРЯЧИЕ КЛАВИШИ ДЛЯ ПРЕЗЕНТАЦИИ
+  // ============================================
+  useEffect(() => {
+    if (!presentationMode) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setPresentationMode(false);
+      } else if (e.key === 'ArrowRight' || e.key === ' ') {
+        nextPresentationScene();
+      } else if (e.key === 'ArrowLeft') {
+        prevPresentationScene();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [presentationMode, selectedSceneIndex]);
+
+  // ============================================
+  // ПЕРЕКЛЮЧЕНИЕ ЯЗЫКА
+  // ============================================
+  const toggleLanguage = () => {
+    setLanguage(prev => prev === 'ru' ? 'en' : 'ru');
+    toast({
+      title: language === 'ru' ? "🇬🇧 English" : "🇷🇺 Русский",
+      description: language === 'ru' ? "Language changed" : "Язык изменён",
     });
   };
 
@@ -1287,7 +1568,7 @@ export default function AnimationStudio() {
     
     const interval = setInterval(() => {
       const projectData = {
-        version: '2.3.0',
+        version: '2.4.0',
         savedAt: new Date().toISOString(),
         project: newProject,
         script,
@@ -1802,12 +2083,39 @@ export default function AnimationStudio() {
                 {isDarkMode ? '☀️' : '🌙'}
               </Button>
               
+              {/* Language Toggle */}
+              <Button
+                onClick={toggleLanguage}
+                variant="outline"
+                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'}`}
+              >
+                {language === 'ru' ? '🇷🇺' : '🇬🇧'}
+              </Button>
+              
+              {/* Hotkeys Help */}
+              <Button
+                onClick={() => setShowHotkeysHelp(true)}
+                variant="outline"
+                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'}`}
+              >
+                ⌨️
+              </Button>
+              
+              {/* Presentation Mode */}
+              <Button
+                onClick={startPresentation}
+                disabled={!script?.scenes || Object.keys(sceneImages).length === 0}
+                className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 disabled:opacity-50"
+              >
+                📽️ {language === 'ru' ? 'Презентация' : 'Present'}
+              </Button>
+              
               {/* Idea Generator Button */}
               <Button
                 onClick={() => setShowIdeaGenerator(true)}
                 className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
               >
-                💡 Идеи
+                💡 {language === 'ru' ? 'Идеи' : 'Ideas'}
               </Button>
             </div>
           </div>
@@ -3502,7 +3810,7 @@ export default function AnimationStudio() {
       {script?.scenes && script.scenes.length > 0 && (
         <div className={`fixed left-4 top-1/2 -translate-y-1/2 z-40 ${isDarkMode ? 'bg-black/40' : 'bg-white/80'} backdrop-blur-sm rounded-xl p-2 border ${isDarkMode ? 'border-white/10' : 'border-purple-200'}`}>
           <div className="space-y-2">
-            <div className={`text-xs ${isDarkMode ? 'text-white/60' : 'text-purple-600'} text-center mb-2`}>Сцены</div>
+            <div className={`text-xs ${isDarkMode ? 'text-white/60' : 'text-purple-600'} text-center mb-2`}>{language === 'ru' ? 'Сцены' : 'Scenes'}</div>
             {script.scenes.map((scene: any, index: number) => (
               <button
                 key={index}
@@ -3519,6 +3827,215 @@ export default function AnimationStudio() {
                 {index + 1}
               </button>
             ))}
+            {/* Notes toggle button */}
+            <button
+              onClick={() => setShowNotesPanel(!showNotesPanel)}
+              className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm transition-all ${
+                showNotesPanel
+                  ? 'bg-amber-500 text-white'
+                  : isDarkMode
+                    ? 'bg-white/10 text-white hover:bg-white/20'
+                    : 'bg-purple-100 text-purple-900 hover:bg-purple-200'
+              }`}
+              title={language === 'ru' ? 'Заметки' : 'Notes'}
+            >
+              📝
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Presentation Mode */}
+      {presentationMode && script?.scenes && (
+        <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+          {/* Top bar */}
+          <div className="flex items-center justify-between p-4 bg-black/50">
+            <h2 className="text-white text-xl font-bold">{script.title}</h2>
+            <div className="flex items-center gap-4">
+              <span className="text-white/60">
+                {language === 'ru' ? `Сцена ${selectedSceneIndex + 1} из ${script.scenes.length}` : `Scene ${selectedSceneIndex + 1} of ${script.scenes.length}`}
+              </span>
+              <Button
+                onClick={() => setPresentationMode(false)}
+                variant="outline"
+                className="border-white/20 text-white hover:bg-white/10"
+              >
+                ✕ {language === 'ru' ? 'Выход' : 'Exit'}
+              </Button>
+            </div>
+          </div>
+          
+          {/* Main content */}
+          <div className="flex-1 flex items-center justify-center relative">
+            {sceneImages[selectedSceneIndex]?.imageUrl ? (
+              <img
+                src={sceneImages[selectedSceneIndex].imageUrl}
+                alt={`Scene ${selectedSceneIndex + 1}`}
+                className="max-w-full max-h-full object-contain"
+              />
+            ) : (
+              <div className="text-white/40 text-center">
+                <Film className="w-24 h-24 mx-auto mb-4 opacity-50" />
+                <p className="text-xl">{language === 'ru' ? 'Изображение не сгенерировано' : 'Image not generated'}</p>
+              </div>
+            )}
+            
+            {/* Navigation arrows */}
+            <button
+              onClick={prevPresentationScene}
+              disabled={selectedSceneIndex === 0}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-white text-2xl transition-all"
+            >
+              ◀
+            </button>
+            <button
+              onClick={nextPresentationScene}
+              disabled={selectedSceneIndex >= script.scenes.length - 1}
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-white text-2xl transition-all"
+            >
+              ▶
+            </button>
+          </div>
+          
+          {/* Bottom info */}
+          <div className="p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+            <div className="max-w-4xl mx-auto">
+              <h3 className="text-white text-2xl font-bold mb-2">
+                {script.scenes[selectedSceneIndex]?.title}
+              </h3>
+              <p className="text-white/70 text-lg mb-3">
+                {script.scenes[selectedSceneIndex]?.description}
+              </p>
+              {script.scenes[selectedSceneIndex]?.dialogue?.length > 0 && (
+                <div className="space-y-2">
+                  {script.scenes[selectedSceneIndex].dialogue.slice(0, 2).map((d: any, i: number) => (
+                    <p key={i} className="text-white/60">
+                      <span className="text-amber-400 font-medium">{d.character}:</span> "{d.line}"
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Progress dots */}
+            <div className="flex justify-center gap-2 mt-4">
+              {script.scenes.map((_: any, i: number) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedSceneIndex(i)}
+                  className={`w-3 h-3 rounded-full transition-all ${
+                    i === selectedSceneIndex ? 'bg-white scale-125' : 'bg-white/30 hover:bg-white/50'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hotkeys Help Modal */}
+      {showHotkeysHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl`}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-purple-900'} flex items-center gap-2`}>
+                ⌨️ {language === 'ru' ? 'Горячие клавиши' : 'Hotkeys'}
+              </h2>
+              <Button
+                variant="ghost"
+                onClick={() => setShowHotkeysHelp(false)}
+                className={`${isDarkMode ? 'text-white hover:bg-white/10' : 'text-purple-900 hover:bg-purple-100'}`}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <div className="space-y-3">
+              {[
+                { key: 'Ctrl + S', action: language === 'ru' ? 'Сохранить проект' : 'Save project' },
+                { key: 'Ctrl + N', action: language === 'ru' ? 'Новый проект' : 'New project' },
+                { key: 'Ctrl + D', action: language === 'ru' ? 'Демо проект' : 'Demo project' },
+                { key: 'Ctrl + G', action: language === 'ru' ? 'Генерировать изображения' : 'Generate images' },
+                { key: 'Ctrl + E', action: language === 'ru' ? 'Экспорт проекта' : 'Export project' },
+                { key: 'Ctrl + Z', action: language === 'ru' ? 'Отменить' : 'Undo' },
+                { key: 'Ctrl + Y', action: language === 'ru' ? 'Повторить' : 'Redo' },
+                { key: '← / →', action: language === 'ru' ? 'Навигация по сценам' : 'Navigate scenes' },
+                { key: 'Space', action: language === 'ru' ? 'Следующая сцена (в презентации)' : 'Next scene (in presentation)' },
+                { key: 'Escape', action: language === 'ru' ? 'Закрыть / Выйти' : 'Close / Exit' },
+              ].map((item, index) => (
+                <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${isDarkMode ? 'bg-white/5' : 'bg-purple-50'}`}>
+                  <span className={`${isDarkMode ? 'text-white/80' : 'text-purple-700'}`}>{item.action}</span>
+                  <kbd className={`px-3 py-1 rounded ${isDarkMode ? 'bg-purple-500/30 text-purple-300' : 'bg-purple-200 text-purple-900'} font-mono text-sm`}>
+                    {item.key}
+                  </kbd>
+                </div>
+              ))}
+            </div>
+            
+            <Button
+              onClick={() => setShowHotkeysHelp(false)}
+              className="w-full mt-6 bg-gradient-to-r from-purple-500 to-pink-500"
+            >
+              {language === 'ru' ? 'Понятно!' : 'Got it!'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Notes Panel */}
+      {showNotesPanel && script?.scenes && (
+        <div className={`fixed right-4 top-1/2 -translate-y-1/2 z-40 w-80 ${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-xl shadow-2xl border ${isDarkMode ? 'border-white/10' : 'border-purple-200'}`}>
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-purple-900'}`}>
+                📝 {language === 'ru' ? 'Заметки к сцене' : 'Scene Notes'} {selectedSceneIndex + 1}
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowNotesPanel(false)}
+                className={`${isDarkMode ? 'text-white hover:bg-white/10' : 'text-purple-900 hover:bg-purple-100'}`}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            {/* Existing notes */}
+            <div className="space-y-2 mb-4 max-h-60 overflow-auto">
+              {sceneNotes[selectedSceneIndex]?.map((note, index) => (
+                <div key={index} className={`p-2 rounded-lg ${isDarkMode ? 'bg-white/5' : 'bg-purple-50'} flex items-start justify-between gap-2`}>
+                  <span className={`text-sm ${isDarkMode ? 'text-white/80' : 'text-purple-700'}`}>{note}</span>
+                  <button
+                    onClick={() => removeSceneNote(selectedSceneIndex, index)}
+                    className="text-red-400 hover:text-red-300 text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )) || (
+                <p className={`text-sm ${isDarkMode ? 'text-white/40' : 'text-purple-400'} text-center`}>
+                  {language === 'ru' ? 'Нет заметок' : 'No notes yet'}
+                </p>
+              )}
+            </div>
+            
+            {/* Add note */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addSceneNote(selectedSceneIndex, newNote)}
+                placeholder={language === 'ru' ? 'Новая заметка...' : 'New note...'}
+                className={`flex-1 px-3 py-2 rounded-lg ${isDarkMode ? 'bg-white/5 border-white/10 text-white placeholder:text-white/40' : 'bg-purple-50 border-purple-200 text-purple-900 placeholder:text-purple-400'} border focus:outline-none focus:ring-2 focus:ring-purple-500`}
+              />
+              <Button
+                onClick={() => addSceneNote(selectedSceneIndex, newNote)}
+                className="bg-purple-500 hover:bg-purple-600"
+              >
+                +
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -3532,7 +4049,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v2.3.0
+              v2.4.0
             </span>
           </div>
         </div>
@@ -3541,7 +4058,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.3.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.4.0</span>
         </div>
       </div>
     </div>
