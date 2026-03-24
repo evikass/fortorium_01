@@ -305,6 +305,13 @@ export default function AnimationStudio() {
       if (data.success) {
         setWorkProgress(`✅ ${data.message}`);
         setScript(data.script);
+        setWorkResult({
+          ...workResult,
+          agents: {
+            ...workResult?.agents,
+            writer: data.virtualAgent ? 'AI-Сценарист' : (data.task?.agent?.name || 'AI-Сценарист')
+          }
+        });
         fetchTasks();
       } else {
         setWorkProgress(`❌ ${data.error}`);
@@ -929,7 +936,7 @@ export default function AnimationStudio() {
                   />
                 </div>
 
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 flex-wrap">
                   <Button
                     onClick={runWriter}
                     disabled={isLoading || !newProject.title || !newProject.description}
@@ -937,6 +944,69 @@ export default function AnimationStudio() {
                     className="border-white/20 text-white hover:bg-white/10"
                   >
                     ✍️ Сценарий
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      if (!newProject.title || !newProject.description) return;
+                      setIsLoading(true);
+                      setWorkProgress('🚀 Создаём проект и запускаем производство...');
+                      
+                      try {
+                        // Создаём проект
+                        const createRes = await fetch('/api/projects', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(newProject)
+                        });
+                        const createData = await createRes.json();
+                        
+                        if (createData.success) {
+                          const projectId = createData.project.id;
+                          setProjects([createData.project, ...projects]);
+                          
+                          // Запускаем полный пайплайн
+                          setWorkProgress('✍️ Сценарист пишет сценарий...');
+                          
+                          const workRes = await fetch('/api/work', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              action: 'run_full_pipeline',
+                              projectId
+                            })
+                          });
+                          
+                          const workData = await workRes.json();
+                          
+                          if (workData.success) {
+                            setWorkProgress('✅ Производство завершено!');
+                            setWorkResult(workData.results);
+                            
+                            if (workData.results.script) {
+                              setScript(workData.results.script);
+                            }
+                            if (workData.results.storyboard) {
+                              setStoryboard(workData.results.storyboard);
+                            }
+                            
+                            fetchTasks();
+                            fetchDirectorReport();
+                          } else {
+                            setWorkProgress(`❌ Ошибка: ${workData.error}`);
+                          }
+                        }
+                      } catch (error) {
+                        setWorkProgress(`❌ Ошибка: ${error}`);
+                      } finally {
+                        setIsLoading(false);
+                        setTimeout(() => setWorkProgress(''), 5000);
+                      }
+                    }}
+                    disabled={isLoading || !newProject.title || !newProject.description}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                  >
+                    {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
+                    Запустить производство
                   </Button>
                   <Button
                     onClick={createProject}
@@ -980,6 +1050,11 @@ export default function AnimationStudio() {
                     <div className="p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg border border-amber-500/20">
                       <h4 className="text-amber-400 font-medium mb-3 flex items-center gap-2">
                         ✍️ Сценарий: {script.title}
+                        {workResult?.agents?.writer && (
+                          <span className="text-white/50 text-xs font-normal">
+                            от {workResult.agents.writer}
+                          </span>
+                        )}
                       </h4>
                       <p className="text-white/80 text-sm mb-3">{script.logline}</p>
                       
@@ -1018,17 +1093,84 @@ export default function AnimationStudio() {
                   )}
 
                   {/* Storyboard Result */}
-                  {storyboard?.success && (
+                  {storyboard && (
                     <div className="p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
                       <h4 className="text-purple-400 font-medium mb-3 flex items-center gap-2">
                         🎨 Раскадровка
+                        {workResult?.agents?.artist && (
+                          <span className="text-white/50 text-xs font-normal">
+                            от {workResult.agents.artist}
+                          </span>
+                        )}
                       </h4>
-                      <img 
-                        src={storyboard.imageUrl} 
-                        alt="Раскадровка" 
-                        className="w-full rounded-lg border border-white/10"
-                      />
-                      <p className="text-white/50 text-xs mt-2">Prompt: {storyboard.prompt}</p>
+                      {storyboard.imageUrl ? (
+                        <img 
+                          src={storyboard.imageUrl} 
+                          alt="Раскадровка" 
+                          className="w-full rounded-lg border border-white/10"
+                        />
+                      ) : (
+                        <div className="p-8 bg-white/5 rounded-lg border border-white/10 text-center">
+                          <span className="text-4xl">🖼️</span>
+                          <p className="text-white/60 text-sm mt-2">Изображение генерируется...</p>
+                          <p className="text-white/40 text-xs mt-1">{storyboard.prompt?.substring(0, 100)}...</p>
+                        </div>
+                      )}
+                      {storyboard.prompt && (
+                        <p className="text-white/50 text-xs mt-2">Prompt: {storyboard.prompt}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Animation Plan */}
+                  {workResult?.animation && (
+                    <div className="p-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg border border-cyan-500/20">
+                      <h4 className="text-cyan-400 font-medium mb-3 flex items-center gap-2">
+                        🎬 План анимации
+                        {workResult?.agents?.animator && (
+                          <span className="text-white/50 text-xs font-normal">
+                            от {workResult.agents.animator}
+                          </span>
+                        )}
+                      </h4>
+                      <p className="text-white/70 text-sm mb-2">Стиль: {workResult.animation.animationStyle}</p>
+                      <p className="text-white/70 text-sm mb-2">Длительность: {workResult.animation.totalDuration}с</p>
+                      
+                      {workResult.animation.scenes?.length > 0 && (
+                        <div className="space-y-2">
+                          {workResult.animation.scenes.map((s: any, i: number) => (
+                            <div key={i} className="p-2 bg-white/5 rounded text-xs">
+                              <span className="text-white font-medium">Сцена {s.sceneNumber}:</span>{' '}
+                              <span className="text-cyan-300">{s.animation?.cameraMovement}</span>
+                              <span className="text-white/40 ml-2">({s.animation?.timing?.start}s - {s.animation?.timing?.end}s)</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Agents Work Summary */}
+                  {workResult?.agents && (
+                    <div className="p-3 bg-white/5 rounded-lg">
+                      <h5 className="text-white/60 text-xs mb-2">👥 Работали над проектом:</h5>
+                      <div className="flex flex-wrap gap-2">
+                        {workResult.agents.writer && (
+                          <Badge variant="outline" className="border-amber-500/30 text-amber-300">
+                            ✍️ {workResult.agents.writer}
+                          </Badge>
+                        )}
+                        {workResult.agents.artist && (
+                          <Badge variant="outline" className="border-purple-500/30 text-purple-300">
+                            🎨 {workResult.agents.artist}
+                          </Badge>
+                        )}
+                        {workResult.agents.animator && (
+                          <Badge variant="outline" className="border-cyan-500/30 text-cyan-300">
+                            🎬 {workResult.agents.animator}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   )}
 
