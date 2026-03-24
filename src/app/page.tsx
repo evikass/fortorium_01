@@ -143,11 +143,14 @@ export default function AnimationStudio() {
   const [pendingCandidates, setPendingCandidates] = useState<Candidate[]>([]);
   const [actionMessage, setActionMessage] = useState<string>('');
   
+  // Директор
+  const [directorReport, setDirectorReport] = useState<string>('');
+  const [directorAnalysis, setDirectorAnalysis] = useState<any>(null);
+  
   // Модальные окна
   const [showHireDialog, setShowHireDialog] = useState(false);
   const [showCandidateDialog, setShowCandidateDialog] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
-  const [directorReport, setDirectorReport] = useState<string>('');
 
   // Форма нового проекта
   const [newProject, setNewProject] = useState({
@@ -191,6 +194,8 @@ export default function AnimationStudio() {
         const data = await res.json();
         if (data.success) {
           setDirectorReport(data.report);
+          setDirectorAnalysis(data.analysis);
+          setDirector(prev => ({ ...prev, status: data.director?.status || 'active' }));
         }
       }
     } catch (error) {
@@ -489,18 +494,19 @@ export default function AnimationStudio() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <CardTitle className="text-white text-xl">Директор Студии</CardTitle>
-                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                        {director.status === 'active' ? 'Онлайн' : 'Занят'}
+                      <CardTitle className="text-white text-xl">Директор ФОРТОРИУМ</CardTitle>
+                      <Badge className={`${director.status === 'hiring' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'}`}>
+                        {director.status === 'hiring' ? 'Ищет специалистов' : director.status === 'active' ? 'Управляет' : 'Онлайн'}
                       </Badge>
                     </div>
                     <CardDescription className="text-white/60">
-                      Управляет студией и принимает решения
+                      AI-директор координирует работу студии
                     </CardDescription>
                   </div>
                   <Button 
                     onClick={initDatabase}
-                    className="bg-gradient-to-r from-amber-500 to-orange-500"
+                    variant="outline"
+                    className="border-white/20 text-white hover:bg-white/10"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
                     Инициализировать БД
@@ -508,6 +514,7 @@ export default function AnimationStudio() {
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Stats */}
                 <div className="grid grid-cols-3 gap-4 mb-4">
                   <div className="p-3 bg-white/5 rounded-lg">
                     <div className="text-white/60 text-sm">Проектов</div>
@@ -524,13 +531,78 @@ export default function AnimationStudio() {
                   </div>
                 </div>
 
+                {/* Director Analysis */}
+                {directorAnalysis && (
+                  <div className="space-y-4">
+                    {/* Decisions */}
+                    {directorAnalysis.decisions?.length > 0 && (
+                      <div className="p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg border border-amber-500/20">
+                        <h4 className="text-amber-400 font-medium mb-2 flex items-center gap-2">
+                          🎯 Решения директора
+                        </h4>
+                        <div className="space-y-1">
+                          {directorAnalysis.decisions.map((d: string, i: number) => (
+                            <p key={i} className="text-white/80 text-sm">{d}</p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recommendations */}
+                    {directorAnalysis.recommendations?.length > 0 && (
+                      <div className="p-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-lg border border-blue-500/20">
+                        <h4 className="text-blue-400 font-medium mb-2 flex items-center gap-2">
+                          💡 Рекомендации
+                        </h4>
+                        <div className="space-y-1">
+                          {directorAnalysis.recommendations.map((r: string, i: number) => (
+                            <p key={i} className="text-white/80 text-sm">• {r}</p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Missing Roles */}
+                    {directorAnalysis.teamAnalysis?.missingRoles?.length > 0 && (
+                      <div className="p-4 bg-white/5 rounded-lg">
+                        <h4 className="text-white/80 font-medium mb-2">⚠️ Не хватает специалистов:</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {directorAnalysis.teamAnalysis.missingRoles.map((r: any, i: number) => (
+                            <Badge key={i} variant="outline" className="border-red-500/30 text-red-400">
+                              {r.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Next Action */}
+                    {directorAnalysis.nextAction && (
+                      <div className="flex items-center gap-3 p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                        <span className="text-2xl">🎮</span>
+                        <div>
+                          <span className="text-purple-400 font-medium">Следующий шаг: </span>
+                          <span className="text-white/80">
+                            {directorAnalysis.nextAction === 'review_candidates' 
+                              ? 'Рассмотреть кандидатов на утверждение' 
+                              : directorAnalysis.nextAction.startsWith('hire_') 
+                                ? `Нанять ${directorAnalysis.nextAction.replace('hire_', '')}` 
+                                : 'Создать новый проект'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Full Report */}
                 {directorReport && (
-                  <div className="p-4 bg-white/5 rounded-lg">
+                  <div className="mt-4 p-4 bg-white/5 rounded-lg">
                     <h4 className="text-white font-medium mb-2 flex items-center gap-2">
                       <MessageSquare className="w-4 h-4" />
-                      Ежедневный отчёт
+                      Полный отчёт
                     </h4>
-                    <p className="text-white/70 text-sm whitespace-pre-wrap">{directorReport}</p>
+                    <pre className="text-white/70 text-sm whitespace-pre-wrap font-sans">{directorReport}</pre>
                   </div>
                 )}
               </CardContent>
