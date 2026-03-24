@@ -796,6 +796,102 @@ export default function AnimationStudio() {
   }, []);
 
   // ============================================
+  // ГОРЯЧИЕ КЛАВИШИ
+  // ============================================
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + S - Сохранить
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (script) {
+          saveToLocalStorage();
+        }
+      }
+      // Ctrl/Cmd + N - Новый проект
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        setActiveTab('studio');
+        setNewProject({ title: '', description: '', style: 'disney', duration: 30 });
+      }
+      // Ctrl/Cmd + D - Демо проект
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        loadDemoProject();
+      }
+      // Ctrl/Cmd + G - Генерировать все изображения
+      if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
+        e.preventDefault();
+        if (script?.scenes) {
+          generateAllSceneImages();
+        }
+      }
+      // Ctrl/Cmd + E - Экспорт
+      if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+        e.preventDefault();
+        if (script) {
+          exportProject();
+        }
+      }
+      // Escape - Отменить редактирование
+      if (e.key === 'Escape' && editingScript) {
+        setEditingScript(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [script, editingScript]);
+
+  // ============================================
+  // ШАБЛОНЫ ПРОЕКТОВ
+  // ============================================
+  const projectTemplates = [
+    {
+      name: "Приключение героя",
+      description: "Классическая история о путешествии и самопознании",
+      style: "disney",
+      prompt: "Молодой герой отправляется в опасное путешествие, чтобы спасти свой дом. По пути он находит верных друзей и узнаёт о скрытых силах."
+    },
+    {
+      name: "Волшебная сказка",
+      description: "Магическая история в стиле Studio Ghibli",
+      style: "ghibli",
+      prompt: "В обычном мире открывается портал в волшебную страну. Главный герой должен восстановить равновесие между мирами."
+    },
+    {
+      name: "Космическая одиссея",
+      description: "Научно-фантастическое приключение в стиле Pixar",
+      style: "pixar",
+      prompt: "Команда исследователей отправляется к далёкой планете. Они обнаруживают удивительную цивилизацию и учатся понимать друг друга."
+    },
+    {
+      name: "Дружба животных",
+      description: "Трогательная история о животных друзьях",
+      style: "cartoon",
+      prompt: "Два разных животных становятся лучшими друзьями и вместе преодолевают препятствия в лесу."
+    },
+    {
+      name: "Спортивная победа",
+      description: "История о команде и победе над собой",
+      style: "anime",
+      prompt: "Нескладная команда мечтает победить в чемпионате. Каждый участник преодолевает свои страхи и слабости."
+    }
+  ];
+
+  const applyTemplate = (template: typeof projectTemplates[0]) => {
+    setNewProject({
+      title: template.name,
+      description: template.prompt,
+      style: template.style,
+      duration: 30
+    });
+    toast({
+      title: "📋 Шаблон применён",
+      description: template.name,
+    });
+  };
+
+  // ============================================
   // ЛОКАЛЬНОЕ ХРАНИЛИЩЕ
   // ============================================
   
@@ -804,7 +900,7 @@ export default function AnimationStudio() {
     if (!script) return;
     
     const projectData = {
-      version: '1.8.0',
+      version: '1.9.0',
       savedAt: new Date().toISOString(),
       project: newProject,
       script,
@@ -1410,6 +1506,26 @@ export default function AnimationStudio() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Templates */}
+                <div className="space-y-2">
+                  <label className="text-sm text-white/80">📋 Быстрый старт (шаблоны):</label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    {projectTemplates.map((template, i) => (
+                      <Button
+                        key={i}
+                        variant="outline"
+                        onClick={() => applyTemplate(template)}
+                        className="h-auto py-2 flex-col items-start border-white/10 text-left hover:bg-white/10"
+                      >
+                        <span className="text-white font-medium text-sm">{template.name}</span>
+                        <span className="text-white/50 text-xs">{template.description}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator className="bg-white/10" />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm text-white/80">Название</label>
@@ -1537,6 +1653,16 @@ export default function AnimationStudio() {
                     {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
                     Создать проект
                   </Button>
+                </div>
+
+                {/* Hotkeys hint */}
+                <div className="pt-4 border-t border-white/10">
+                  <p className="text-white/40 text-xs">
+                    ⌨️ Горячие клавиши: <span className="text-white/60">Ctrl+S</span> сохранить • 
+                    <span className="text-white/60"> Ctrl+D</span> демо • 
+                    <span className="text-white/60"> Ctrl+G</span> генерировать • 
+                    <span className="text-white/60"> Ctrl+E</span> экспорт
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -2495,7 +2621,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v1.8.0
+              v1.9.0
             </span>
           </div>
         </div>
@@ -2504,7 +2630,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v1.8.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v1.9.0</span>
         </div>
       </div>
     </div>
