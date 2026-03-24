@@ -49,7 +49,8 @@ import {
   Star,
   Heart,
   Zap,
-  Search
+  Search,
+  Volume2
 } from 'lucide-react';
 
 // Типы
@@ -153,6 +154,14 @@ export default function AnimationStudio() {
   const [script, setScript] = useState<any>(null);
   const [storyboard, setStoryboard] = useState<any>(null);
   const [tasks, setTasks] = useState<any[]>([]);
+  
+  // Изображения для всех сцен
+  const [sceneImages, setSceneImages] = useState<Record<number, any>>({});
+  const [generatingScene, setGeneratingScene] = useState<number | null>(null);
+  
+  // Озвучка
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [audioEnabled, setAudioEnabled] = useState(false);
   
   // Модальные окна
   const [showHireDialog, setShowHireDialog] = useState(false);
@@ -365,6 +374,119 @@ export default function AnimationStudio() {
     } finally {
       setIsLoading(false);
       setTimeout(() => setWorkProgress(''), 3000);
+    }
+  };
+
+  // Генерация изображения для конкретной сцены
+  const generateSceneImage = async (sceneIndex: number) => {
+    if (!script?.scenes?.[sceneIndex]) return;
+    
+    setGeneratingScene(sceneIndex);
+    
+    try {
+      const scene = script.scenes[sceneIndex];
+      
+      const res = await fetch('/api/work', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_storyboard',
+          projectId: projects[0]?.id || 'default',
+          data: {
+            sceneTitle: scene.title,
+            sceneDescription: scene.description || scene.action,
+            style: newProject.style
+          }
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success && data.image?.imageUrl) {
+        setSceneImages(prev => ({
+          ...prev,
+          [sceneIndex]: data.image
+        }));
+      }
+    } catch (error) {
+      console.error('Error generating scene image:', error);
+    } finally {
+      setGeneratingScene(null);
+    }
+  };
+
+  // Генерация изображений для всех сцен
+  const generateAllSceneImages = async () => {
+    if (!script?.scenes) return;
+    
+    setIsLoading(true);
+    setWorkProgress('🎨 Генерация изображений для всех сцен...');
+    
+    const newImages: Record<number, any> = {};
+    
+    for (let i = 0; i < script.scenes.length; i++) {
+      setWorkProgress(`🎨 Генерация изображения ${i + 1}/${script.scenes.length}...`);
+      
+      const scene = script.scenes[i];
+      
+      try {
+        const res = await fetch('/api/work', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'create_storyboard',
+            projectId: projects[0]?.id || 'default',
+            data: {
+              sceneTitle: scene.title,
+              sceneDescription: scene.description || scene.action,
+              style: newProject.style
+            }
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success && data.image?.imageUrl) {
+          newImages[i] = data.image;
+        }
+      } catch (error) {
+        console.error(`Error generating image for scene ${i}:`, error);
+      }
+    }
+    
+    setSceneImages(newImages);
+    setWorkProgress('✅ Все изображения сгенерированы!');
+    setIsLoading(false);
+    setTimeout(() => setWorkProgress(''), 3000);
+  };
+
+  // Озвучка текста через TTS
+  const playDialogue = async (text: string, character: string) => {
+    if (playingAudio) {
+      setPlayingAudio(null);
+      return;
+    }
+    
+    try {
+      setPlayingAudio(character);
+      
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, character })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.audioUrl) {
+          const audio = new Audio(data.audioUrl);
+          audio.onended = () => setPlayingAudio(null);
+          audio.play();
+        }
+      }
+    } catch (error) {
+      console.error('TTS error:', error);
+      setPlayingAudio(null);
     }
   };
 
@@ -1072,15 +1194,93 @@ export default function AnimationStudio() {
                         </div>
                       )}
 
-                      {/* Scenes */}
+                      {/* Scenes with Images */}
                       {script.scenes?.length > 0 && (
-                        <div className="space-y-2">
-                          <h5 className="text-white/60 text-xs">Сцены ({script.scenes.length}):</h5>
+                        <div className="space-y-3 mt-4">
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-white/60 text-xs">Сцены ({script.scenes.length}):</h5>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={generateAllSceneImages}
+                              disabled={isLoading || !script?.scenes}
+                              className="h-6 text-xs border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
+                            >
+                              🎨 Сгенерировать все изображения
+                            </Button>
+                          </div>
                           {script.scenes.map((scene: any, i: number) => (
-                            <div key={i} className="p-2 bg-white/5 rounded text-xs">
-                              <span className="text-white font-medium">Сцена {scene.number}:</span>{' '}
-                              <span className="text-white/70">{scene.title}</span>
-                              <span className="text-white/50 ml-2">({scene.duration}с)</span>
+                            <div key={i} className="p-3 bg-white/5 rounded-lg border border-white/10">
+                              <div className="flex items-start justify-between mb-2">
+                                <div>
+                                  <span className="text-white font-medium text-sm">Сцена {scene.number}:</span>{' '}
+                                  <span className="text-amber-300">{scene.title}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-xs border-white/20 text-white/60">
+                                    {scene.duration}с
+                                  </Badge>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => generateSceneImage(i)}
+                                    disabled={generatingScene !== null}
+                                    className="h-6 w-6 p-0"
+                                    title="Сгенерировать изображение"
+                                  >
+                                    {generatingScene === i ? (
+                                      <Loader2 className="w-3 h-3 animate-spin text-purple-400" />
+                                    ) : sceneImages[i]?.imageUrl ? (
+                                      <CheckCircle className="w-3 h-3 text-green-400" />
+                                    ) : (
+                                      <Palette className="w-3 h-3 text-white/40" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              <p className="text-white/60 text-xs mb-2">{scene.description}</p>
+                              
+                              {/* Scene Image */}
+                              {sceneImages[i]?.imageUrl && (
+                                <img 
+                                  src={sceneImages[i].imageUrl}
+                                  alt={`Сцена ${scene.number}`}
+                                  className="w-full rounded-lg border border-white/10 mb-2"
+                                />
+                              )}
+                              
+                              {/* Dialogues */}
+                              {scene.dialogue?.length > 0 && (
+                                <div className="space-y-1.5 mt-2">
+                                  {scene.dialogue.map((d: any, di: number) => (
+                                    <div 
+                                      key={di} 
+                                      className={`flex items-center gap-2 p-1.5 rounded ${
+                                        playingAudio === `${i}-${di}` ? 'bg-green-500/20' : 'bg-white/5'
+                                      }`}
+                                    >
+                                      <span className="text-amber-300 font-medium text-xs min-w-[80px]">
+                                        {d.character}:
+                                      </span>
+                                      <span className="text-white/70 text-xs flex-1">"{d.line}"</span>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => playDialogue(d.line, d.character)}
+                                        className="h-5 w-5 p-0"
+                                        title="Озвучить"
+                                      >
+                                        {playingAudio === `${i}-${di}` ? (
+                                          <Mic className="w-3 h-3 text-green-400" />
+                                        ) : (
+                                          <Volume2 className="w-3 h-3 text-white/40" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
