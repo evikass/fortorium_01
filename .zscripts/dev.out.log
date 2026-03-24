@@ -211,3 +211,29 @@ prisma:query SELECT `main`.`AnimationProject`.`id`, `main`.`AnimationProject`.`t
 prisma:query SELECT `main`.`BlenderConnection`.`id`, `main`.`BlenderConnection`.`name`, `main`.`BlenderConnection`.`host`, `main`.`BlenderConnection`.`port`, `main`.`BlenderConnection`.`apiKey`, `main`.`BlenderConnection`.`status`, `main`.`BlenderConnection`.`lastConnected`, `main`.`BlenderConnection`.`createdAt` FROM `main`.`BlenderConnection` WHERE 1=1 LIMIT ? OFFSET ?
  GET /api/blender 200 in 5ms (compile: 1180µs, render: 4ms)
 ✓ Compiled in 171ms
+ GET / 200 in 56ms (compile: 6ms, render: 50ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`BlenderConnection`.`id`, `main`.`BlenderConnection`.`name`, `main`.`BlenderConnection`.`host`, `main`.`BlenderConnection`.`port`, `main`.`BlenderConnection`.`apiKey`, `main`.`BlenderConnection`.`status`, `main`.`BlenderConnection`.`lastConnected`, `main`.`BlenderConnection`.`createdAt` FROM `main`.`BlenderConnection` WHERE 1=1 LIMIT ? OFFSET ?
+ GET /api/blender 200 in 11ms (compile: 3ms, render: 8ms)
+prisma:query SELECT `main`.`AnimationProject`.`id`, `main`.`AnimationProject`.`title`, `main`.`AnimationProject`.`description`, `main`.`AnimationProject`.`style`, `main`.`AnimationProject`.`duration`, `main`.`AnimationProject`.`status`, `main`.`AnimationProject`.`finalVideoUrl`, `main`.`AnimationProject`.`thumbnailUrl`, `main`.`AnimationProject`.`blenderScenePath`, `main`.`AnimationProject`.`useBlender`, `main`.`AnimationProject`.`createdAt`, `main`.`AnimationProject`.`updatedAt` FROM `main`.`AnimationProject` WHERE 1=1 ORDER BY `main`.`AnimationProject`.`createdAt` DESC LIMIT ? OFFSET ?
+ GET /api/projects 200 in 9ms (compile: 4ms, render: 5ms)
+ GET / 200 in 38ms (compile: 6ms, render: 33ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`BlenderConnection`.`id`, `main`.`BlenderConnection`.`name`, `main`.`BlenderConnection`.`host`, `main`.`BlenderConnection`.`port`, `main`.`BlenderConnection`.`apiKey`, `main`.`BlenderConnection`.`status`, `main`.`BlenderConnection`.`lastConnected`, `main`.`BlenderConnection`.`createdAt` FROM `main`.`BlenderConnection` WHERE 1=1 LIMIT ? OFFSET ?
+ GET /api/blender 200 in 8ms (compile: 1692µs, render: 6ms)
+prisma:query SELECT `main`.`AnimationProject`.`id`, `main`.`AnimationProject`.`title`, `main`.`AnimationProject`.`description`, `main`.`AnimationProject`.`style`, `main`.`AnimationProject`.`duration`, `main`.`AnimationProject`.`status`, `main`.`AnimationProject`.`finalVideoUrl`, `main`.`AnimationProject`.`thumbnailUrl`, `main`.`AnimationProject`.`blenderScenePath`, `main`.`AnimationProject`.`useBlender`, `main`.`AnimationProject`.`createdAt`, `main`.`AnimationProject`.`updatedAt` FROM `main`.`AnimationProject` WHERE 1=1 ORDER BY `main`.`AnimationProject`.`createdAt` DESC LIMIT ? OFFSET ?
+ GET /api/projects 200 in 5ms (compile: 1099µs, render: 4ms)
+ GET / 200 in 79ms (compile: 48ms, render: 32ms)
+ GET / 200 in 14ms (compile: 1950µs, render: 13ms)
+ GET / 200 in 15ms (compile: 1676µs, render: 13ms)
+ GET / 200 in 19ms (compile: 2ms, render: 16ms)
+ GET / 200 in 13ms (compile: 1776µs, render: 11ms)
+ GET / 200 in 18ms (compile: 2ms, render: 16ms)
+ GET / 200 in 11ms (compile: 1638µs, render: 9ms)
+ GET / 200 in 13ms (compile: 3ms, render: 10ms)
+ GET / 200 in 22ms (compile: 1634µs, render: 20ms)
+ GET / 200 in 14ms (compile: 1773µs, render: 12ms)
+ GET / 200 in 13ms (compile: 1732µs, render: 11ms)
+ GET / 200 in 11ms (compile: 1612µs, render: 10ms)
+ GET / 200 in 17ms (compile: 2ms, render: 15ms)
+ GET / 200 in 18ms (compile: 3ms, render: 15ms)
