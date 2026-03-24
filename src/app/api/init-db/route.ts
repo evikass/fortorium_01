@@ -196,6 +196,13 @@ export async function GET() {
       )
     `;
 
+    // Добавляем недостающие колонки если их нет (PostgreSQL)
+    try { await prisma.$executeRaw`ALTER TABLE "AnimationProject" ADD COLUMN "assignedAgents" TEXT`; } catch (e) { /* колонка уже существует */ }
+    try { await prisma.$executeRaw`ALTER TABLE "AnimationProject" ADD COLUMN "useBlender" BOOLEAN DEFAULT false`; } catch (e) { /* колонка уже существует */ }
+    try { await prisma.$executeRaw`ALTER TABLE "AnimationProject" ADD COLUMN "blenderScenePath" TEXT`; } catch (e) { /* колонка уже существует */ }
+    try { await prisma.$executeRaw`ALTER TABLE "AnimationProject" ADD COLUMN "finalVideoUrl" TEXT`; } catch (e) { /* колонка уже существует */ }
+    try { await prisma.$executeRaw`ALTER TABLE "AnimationProject" ADD COLUMN "thumbnailUrl" TEXT`; } catch (e) { /* колонка уже существует */ }
+
     await prisma.$executeRaw`
       CREATE TABLE IF NOT EXISTS "Scene" (
         "id" TEXT PRIMARY KEY,
