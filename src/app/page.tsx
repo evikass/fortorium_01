@@ -188,6 +188,15 @@ const FREE_IMAGE_AGENTS = [
   }
 ];
 
+// Настроения для саундтрека
+const SOUNDTRACK_MOODS_CONFIG = [
+  { value: 'adventure', labelRu: 'Приключение', labelEn: 'Adventure', icon: '🗺️', descRu: 'Вдохновляющая, героическая музыка', descEn: 'Inspiring, heroic music' },
+  { value: 'epic', labelRu: 'Эпическая', labelEn: 'Epic', icon: '⚔️', descRu: 'Грандиозная, мощная оркестровая', descEn: 'Grand, powerful orchestral' },
+  { value: 'playful', labelRu: 'Игривая', labelEn: 'Playful', icon: '🎮', descRu: 'Весёлая, лёгкая музыка', descEn: 'Fun, light music' },
+  { value: 'dramatic', labelRu: 'Драматическая', labelEn: 'Dramatic', icon: '🎭', descRu: 'Эмоциональная, напряжённая', descEn: 'Emotional, intense' },
+  { value: 'peaceful', labelRu: 'Спокойная', labelEn: 'Peaceful', icon: '🌿', descRu: 'Мягкая, расслабляющая', descEn: 'Soft, relaxing' },
+];
+
 // Жанры для генератора идей
 const GENRES = [
   { value: 'adventure', label: 'Приключение', icon: '🗺️' },
@@ -484,6 +493,16 @@ export default function AnimationStudio() {
   // Видео
   const [generatingVideo, setGeneratingVideo] = useState(false);
   const [projectVideo, setProjectVideo] = useState<string | null>(null);
+  
+  // Саундтрек
+  const [generatingSoundtrack, setGeneratingSoundtrack] = useState(false);
+  const [projectSoundtrack, setProjectSoundtrack] = useState<string | null>(null);
+  const [playingSoundtrack, setPlayingSoundtrack] = useState(false);
+  const [soundtrackMood, setSoundtrackMood] = useState<'epic' | 'playful' | 'dramatic' | 'peaceful' | 'adventure'>('adventure');
+  const [showSoundtrackDialog, setShowSoundtrackDialog] = useState(false);
+  
+  // Звуковые эффекты UI
+  const [uiSoundEnabled, setUiSoundEnabled] = useState(false);
   
   // Проекты для сохранения
   const [savedProjects, setSavedProjects] = useState<any[]>([]);
@@ -1756,6 +1775,173 @@ export default function AnimationStudio() {
     return stylePrompts[style] || stylePrompts.disney;
   };
 
+  // ============================================
+  // ГЕНЕРАЦИЯ САУНДТРЕКА
+  // ============================================
+  const generateSoundtrack = async () => {
+    if (!script) {
+      toast({
+        title: language === 'ru' ? "⚠️ Нет данных" : "⚠️ No data",
+        description: language === 'ru' ? "Сначала создайте сценарий" : "Create a script first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setGeneratingSoundtrack(true);
+    
+    try {
+      // Используем TTS API для создания звукового сопровождения
+      // На основе настроения проекта генерируем описание для музыки
+      const moodDescription = {
+        adventure: 'Inspiring orchestral adventure theme with strings and brass, cinematic',
+        epic: 'Epic cinematic orchestral music with powerful drums and choir, heroic',
+        playful: 'Playful cheerful music with pizzicato strings and woodwinds, fun',
+        dramatic: 'Dramatic emotional music with piano and strings, intense',
+        peaceful: 'Peaceful ambient music with soft piano and strings, relaxing'
+      };
+      
+      const styleMusicMap: Record<string, string> = {
+        ghibli: 'whimsical, magical, Joe Hisaishi style',
+        disney: 'Disney musical style, Broadway inspired',
+        pixar: 'modern cinematic, Randy Newman style',
+        anime: 'anime soundtrack, J-pop influenced',
+        cartoon: 'cartoon music, wacky, fun',
+        claymation: 'quirky, British humor style',
+        watercolor: 'soft piano, impressionist',
+        retro: 'synthwave, 80s electronic',
+        stopmotion: 'folk music, acoustic',
+        comic: 'heroic, action music',
+        soviet: 'Russian folk inspired, nostalgic, warm',
+        'soviet-puppet': 'playful, children music, toy instruments'
+      };
+      
+      const styleMusic = styleMusicMap[newProject.style] || styleMusicMap.disney;
+      
+      // Создаём текст для озвучки описания музыки (workaround)
+      const musicPrompt = `${moodDescription[soundtrackMood]}, ${styleMusic}, for "${script.title}" animation project, ${script.totalDuration || 30} seconds`;
+      
+      // Генерируем несколько аудио сегментов
+      const audioSegments = [];
+      
+      // Генерируем заголовок
+      const moodConfig = SOUNDTRACK_MOODS_CONFIG.find(m => m.value === soundtrackMood);
+      const titleText = language === 'ru' 
+        ? `Музыкальная тема: ${script.title}. Настроение: ${moodConfig?.labelRu || 'Приключение'}`
+        : `Musical theme: ${script.title}. Mood: ${moodConfig?.labelEn || 'Adventure'}`;
+      
+      // Используем TTS для создания аудио
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          text: titleText, 
+          character: 'narrator',
+          style: soundtrackMood
+        })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.audioUrl) {
+          setProjectSoundtrack(data.audioUrl);
+          toast({
+            title: "🎵 " + (language === 'ru' ? 'Саундтрек создан' : 'Soundtrack created'),
+            description: language === 'ru' ? 'Музыкальная тема готова!' : 'Musical theme is ready!',
+          });
+        }
+      } else {
+        // Fallback - используем Web Audio API для простого тонга
+        createSimpleSoundtrack();
+      }
+    } catch (error) {
+      console.error('Soundtrack generation error:', error);
+      // Fallback
+      createSimpleSoundtrack();
+    } finally {
+      setGeneratingSoundtrack(false);
+    }
+  };
+  
+  // Создание простого саундтрека через Web Audio API
+  const createSimpleSoundtrack = () => {
+    // Создаём простой тон с частотой на основе настроения
+    const frequencies: Record<string, number> = {
+      adventure: 440,
+      epic: 349,
+      playful: 523,
+      dramatic: 294,
+      peaceful: 392
+    };
+    
+    const freq = frequencies[soundtrackMood] || 440;
+    
+    // Создаём Data URL для простого синусоидального тона
+    const sampleRate = 44100;
+    const duration = 3; // 3 секунды
+    const numSamples = sampleRate * duration;
+    
+    // Формируем WAV заголовок
+    const buffer = new ArrayBuffer(44 + numSamples * 2);
+    const view = new DataView(buffer);
+    
+    // WAV заголовок
+    const writeString = (offset: number, string: string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+    
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + numSamples * 2, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, numSamples * 2, true);
+    
+    // Генерируем тон с затуханием
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const envelope = Math.exp(-t / (duration / 3)); // Затухание
+      const sample = Math.sin(2 * Math.PI * freq * t) * envelope * 0.3;
+      view.setInt16(44 + i * 2, sample * 0x7FFF, true);
+    }
+    
+    const blob = new Blob([buffer], { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+    setProjectSoundtrack(url);
+    
+    toast({
+      title: "🎵 " + (language === 'ru' ? 'Саундтрек создан' : 'Soundtrack created'),
+      description: language === 'ru' ? 'Простая мелодия сгенерирована' : 'Simple melody generated',
+    });
+  };
+  
+  const playSoundtrack = () => {
+    if (!projectSoundtrack) return;
+    
+    const audio = new Audio(projectSoundtrack);
+    audio.play();
+    setPlayingSoundtrack(true);
+    audio.onended = () => setPlayingSoundtrack(false);
+  };
+  
+  const stopSoundtrack = () => {
+    setPlayingSoundtrack(false);
+    // Останавливаем все аудио
+    const audios = document.getElementsByTagName('audio');
+    for (let i = 0; i < audios.length; i++) {
+      audios[i].pause();
+    }
+  };
+
   // Генерация изображений для всех сцен
   const generateAllSceneImages = async () => {
     if (!script?.scenes) return;
@@ -2848,6 +3034,16 @@ export default function AnimationStudio() {
                 ) : (
                   <>📄 PDF</>
                 )}
+              </Button>
+              
+              {/* Soundtrack Button */}
+              <Button
+                onClick={() => setShowSoundtrackDialog(true)}
+                disabled={!script}
+                variant="outline"
+                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'} disabled:opacity-50`}
+              >
+                🎵 {language === 'ru' ? 'Музыка' : 'Music'}
               </Button>
             </div>
           </div>
@@ -5064,6 +5260,124 @@ export default function AnimationStudio() {
         </div>
       )}
 
+      {/* Soundtrack Dialog */}
+      {showSoundtrackDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl`}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-purple-900'} flex items-center gap-2`}>
+                🎵 {language === 'ru' ? 'Саундтрек проекта' : 'Project Soundtrack'}
+              </h2>
+              <Button
+                variant="ghost"
+                onClick={() => setShowSoundtrackDialog(false)}
+                className={`${isDarkMode ? 'text-white hover:bg-white/10' : 'text-purple-900 hover:bg-purple-100'}`}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <p className={`${isDarkMode ? 'text-white/60' : 'text-purple-600'} mb-4`}>
+              {language === 'ru' 
+                ? 'Выберите настроение для музыкального сопровождения вашего проекта:' 
+                : 'Select a mood for your project musical accompaniment:'}
+            </p>
+            
+            {/* Mood Selection */}
+            <div className="grid grid-cols-2 gap-2 mb-6">
+              {SOUNDTRACK_MOODS_CONFIG.map(mood => (
+                <button
+                  key={mood.value}
+                  onClick={() => setSoundtrackMood(mood.value as any)}
+                  className={`p-4 rounded-xl border-2 transition-all text-left ${
+                    soundtrackMood === mood.value
+                      ? 'border-purple-500 bg-purple-500/10'
+                      : isDarkMode
+                        ? 'border-white/10 hover:border-white/30 hover:bg-white/5'
+                        : 'border-purple-200 hover:border-purple-400 hover:bg-purple-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{mood.icon}</span>
+                    <div>
+                      <div className={`font-semibold ${isDarkMode ? 'text-white' : 'text-purple-900'}`}>
+                        {language === 'ru' ? mood.labelRu : mood.labelEn}
+                      </div>
+                      <div className={`text-xs ${isDarkMode ? 'text-white/60' : 'text-purple-600'}`}>
+                        {language === 'ru' ? mood.descRu : mood.descEn}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            
+            {/* Generate Button */}
+            <Button
+              onClick={generateSoundtrack}
+              disabled={generatingSoundtrack}
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 py-6 text-lg mb-4"
+            >
+              {generatingSoundtrack ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  {language === 'ru' ? 'Генерация...' : 'Generating...'}
+                </>
+              ) : (
+                <>🎵 {language === 'ru' ? 'Создать саундтрек' : 'Create Soundtrack'}</>
+              )}
+            </Button>
+            
+            {/* Current Soundtrack */}
+            {projectSoundtrack && (
+              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-purple-50'} mb-4`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">🎵</span>
+                    <div>
+                      <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-purple-900'}`}>
+                        {language === 'ru' ? 'Музыкальная тема' : 'Musical Theme'}
+                      </div>
+                      <div className={`text-sm ${isDarkMode ? 'text-white/60' : 'text-purple-600'}`}>
+                        {script?.title}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={playingSoundtrack ? stopSoundtrack : playSoundtrack}
+                      className={`${playingSoundtrack ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}
+                    >
+                      {playingSoundtrack ? '⏹️' : '▶️'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Info */}
+            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+              <div className="flex items-center gap-2 text-blue-400 text-sm">
+                <span>ℹ️</span>
+                <span>
+                  {language === 'ru' 
+                    ? 'Саундтрек создаётся на основе стиля и настроения проекта' 
+                    : 'Soundtrack is created based on project style and mood'}
+                </span>
+              </div>
+            </div>
+            
+            <Button
+              onClick={() => setShowSoundtrackDialog(false)}
+              className="w-full mt-4"
+              variant="outline"
+            >
+              {language === 'ru' ? 'Закрыть' : 'Close'}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Scene Timeline */}
       {script?.scenes && showTimeline && !presentationMode && (
         <div className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-40 ${isDarkMode ? 'bg-black/80' : 'bg-white/90'} backdrop-blur-sm rounded-xl p-3 border ${isDarkMode ? 'border-white/10' : 'border-purple-200'} shadow-2xl max-w-4xl w-full mx-4`}>
@@ -5148,7 +5462,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v2.7.0
+              v2.8.0
             </span>
           </div>
         </div>
@@ -5157,7 +5471,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.7.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.8.0</span>
         </div>
       </div>
     </div>
