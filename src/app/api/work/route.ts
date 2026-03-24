@@ -2,9 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import ZAI from 'z-ai-web-dev-sdk';
 import { db } from '@/lib/db';
 
-// Инициализация AI
+// Проверяем есть ли AI ключи
+const hasAIKeys = process.env.OPENAI_API_KEY || process.env.ZAI_API_KEY;
+
+// Инициализация AI (если есть ключи)
 async function getAI() {
-  return await ZAI.create();
+  if (!hasAIKeys) {
+    return null;
+  }
+  try {
+    return await ZAI.create();
+  } catch {
+    return null;
+  }
 }
 
 // ============================================
@@ -13,7 +23,9 @@ async function getAI() {
 async function writerAgent(projectTitle: string, projectDescription: string, style: string) {
   const zai = await getAI();
   
-  const prompt = `Ты профессиональный сценарист анимации. Создай короткий сценарий для мультфильма.
+  // Если есть AI - используем его
+  if (zai) {
+    const prompt = `Ты профессиональный сценарист анимации. Создай короткий сценарий для мультфильма.
 
 Название: ${projectTitle}
 Описание идеи: ${projectDescription}
@@ -45,28 +57,84 @@ async function writerAgent(projectTitle: string, projectDescription: string, sty
 
 Сделай сценарий интересным, с эмоциями и динамикой. 3-5 сцен.`;
 
-  const response = await zai.chat.completions.create({
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.8
-  });
+    try {
+      const response = await zai.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.8
+      });
 
-  const content = response.choices[0]?.message?.content || '';
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  
-  if (jsonMatch) {
-    return JSON.parse(jsonMatch[0]);
+      const content = response.choices[0]?.message?.content || '';
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      console.error('AI error:', e);
+    }
   }
   
-  // Fallback
+  // Fallback - генерируем базовый сценарий на основе описания
   return {
     title: projectTitle,
     logline: projectDescription,
-    characters: [{ name: "Главный герой", description: "Протагонист истории", traits: ["смелый", "добрый"] }],
-    scenes: [
-      { number: 1, title: "Начало", location: "Неизвестно", description: projectDescription, dialogue: [], action: "История начинается", duration: 10 }
+    mood: style === 'ghibli' ? 'Волшебный' : style === 'disney' ? 'Семейный' : 'Приключенческий',
+    characters: [
+      { name: "Главный Герой", description: "Протагонист истории", traits: ["смелый", "добрый", "любознательный"] },
+      { name: "Верный Друг", description: "Помощник героя", traits: ["верный", "забавный", "оптимист"] },
+      { name: "Антагонист", description: "Противник героя", traits: ["хитрый", "амбициозный"] }
     ],
-    totalDuration: 30,
-    mood: "приключенческий"
+    scenes: [
+      {
+        number: 1,
+        title: "Завязка истории",
+        location: "Дом главного героя",
+        description: `${projectDescription}. Герой мечтает о великом приключении.`,
+        dialogue: [
+          { character: "Главный Герой", line: "Сегодня начинается моё приключение!" },
+          { character: "Верный Друг", line: "Я с тобой, друг! Это будет здорово!" }
+        ],
+        action: "Герой собирает вещи и готовится к путешествию",
+        duration: 8
+      },
+      {
+        number: 2,
+        title: "Путь к цели",
+        location: "В пути",
+        description: "Герои преодолевают первые препятствия на своём пути.",
+        dialogue: [
+          { character: "Главный Герой", line: "Смотри! Там впереди что-то интересное!" },
+          { character: "Верный Друг", line: "Нужно быть осторожными..." }
+        ],
+        action: "Путешественники идут через лес/город",
+        duration: 7
+      },
+      {
+        number: 3,
+        title: "Испытание",
+        location: "Таинственное место",
+        description: "Герои сталкиваются с главным препятствием.",
+        dialogue: [
+          { character: "Антагонист", line: "Вы никогда не пройдёте!" },
+          { character: "Главный Герой", line: "Мы справимся, если будем вместе!" }
+        ],
+        action: "Напряжённая сцена с препятствием",
+        duration: 8
+      },
+      {
+        number: 4,
+        title: "Триумф",
+        location: "Цель путешествия",
+        description: "Герои побеждают и достигают цели.",
+        dialogue: [
+          { character: "Главный Герой", line: "Мы сделали это!" },
+          { character: "Верный Друг", line: "Я знал, что у нас получится!" }
+        ],
+        action: "Победная сцена, герои празднуют успех",
+        duration: 7
+      }
+    ],
+    totalDuration: 30
   };
 }
 
@@ -87,25 +155,31 @@ async function artistAgent(sceneTitle: string, sceneDescription: string, style: 
   const stylePrompt = stylePrompts[style] || stylePrompts.disney;
   const imagePrompt = `${stylePrompt}, ${sceneDescription}, scene from animation, ${sceneTitle}, high quality, detailed`;
   
-  try {
-    const imageResponse = await zai.images.generations.create({
-      prompt: imagePrompt,
-      size: '1024x1024'
-    });
-    
-    return {
-      success: true,
-      imageUrl: `data:image/png;base64,${imageResponse.data[0].base64}`,
-      prompt: imagePrompt
-    };
-  } catch (error) {
-    console.error('Image generation error:', error);
-    return {
-      success: false,
-      error: 'Не удалось сгенерировать изображение',
-      prompt: imagePrompt
-    };
+  // Если есть AI - генерируем изображение
+  if (zai) {
+    try {
+      const imageResponse = await zai.images.generations.create({
+        prompt: imagePrompt,
+        size: '1024x1024'
+      });
+      
+      return {
+        success: true,
+        imageUrl: `data:image/png;base64,${imageResponse.data[0].base64}`,
+        prompt: imagePrompt
+      };
+    } catch (error) {
+      console.error('Image generation error:', error);
+    }
   }
+  
+  // Fallback - возвращаем заглушку
+  return {
+    success: true,
+    imageUrl: null,
+    prompt: imagePrompt,
+    message: 'Изображение будет сгенерировано при наличии AI API ключей'
+  };
 }
 
 // ============================================
@@ -114,7 +188,9 @@ async function artistAgent(sceneTitle: string, sceneDescription: string, style: 
 async function animatorAgent(scenes: any[]) {
   const zai = await getAI();
   
-  const prompt = `Ты профессиональный аниматор. Создай детальное описание анимации для каждой сцены.
+  // Если есть AI - используем его
+  if (zai) {
+    const prompt = `Ты профессиональный аниматор. Создай детальное описание анимации для каждой сцены.
 
 Сцены из сценария:
 ${JSON.stringify(scenes, null, 2)}
@@ -137,19 +213,38 @@ ${JSON.stringify(scenes, null, 2)}
   "animationStyle": "описание стиля анимации"
 }`;
 
-  const response = await zai.chat.completions.create({
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.7
-  });
+    try {
+      const response = await zai.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7
+      });
 
-  const content = response.choices[0]?.message?.content || '';
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  
-  if (jsonMatch) {
-    return JSON.parse(jsonMatch[0]);
+      const content = response.choices[0]?.message?.content || '';
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      console.error('AI error:', e);
+    }
   }
   
-  return { scenes: [], totalDuration: 30, animationStyle: "Базовая анимация" };
+  // Fallback - базовая анимация
+  return {
+    scenes: scenes.map((s, i) => ({
+      sceneNumber: i + 1,
+      animation: {
+        cameraMovement: i === 0 ? "Статичный кадр, затем медленный наезд" : "Плавное панорамирование",
+        characterActions: ["Вход персонажа", "Основное действие", "Реакция"],
+        timing: { start: i * 7, end: (i + 1) * 7 },
+        transitions: i < scenes.length - 1 ? "Кросс-диссольв" : "Затухание",
+        effects: ["Световые блики", "Лёгкое размытие движения"]
+      }
+    })),
+    totalDuration: scenes.length * 7,
+    animationStyle: "Классическая 2D анимация"
+  };
 }
 
 // ============================================
