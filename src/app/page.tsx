@@ -4071,10 +4071,10 @@ export default function AnimationStudio() {
                         key={i}
                         variant="outline"
                         onClick={() => applyTemplate(template)}
-                        className="h-auto py-2 flex-col items-start border-white/10 text-left hover:bg-white/10"
+                        className="h-auto py-2 flex-col items-start bg-purple-500/20 border-purple-500/40 text-left hover:bg-purple-500/30"
                       >
-                        <span className="text-white font-medium text-sm">{template.name}</span>
-                        <span className="text-white/50 text-xs">{template.description}</span>
+                        <span className="text-purple-200 font-medium text-sm">{template.name}</span>
+                        <span className="text-purple-300/60 text-xs">{template.description}</span>
                       </Button>
                     ))}
                   </div>
@@ -4130,15 +4130,14 @@ export default function AnimationStudio() {
                   <Button
                     onClick={loadDemoProject}
                     variant="outline"
-                    className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+                    className="bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-amber-500/30 hover:text-amber-300"
                   >
                     🎭 Демо
                   </Button>
                   <Button
                     onClick={runWriter}
                     disabled={isLoading || !newProject.title || !newProject.description}
-                    variant="outline"
-                    className="border-white/20 text-white hover:bg-white/10"
+                    className="bg-blue-500/20 border border-blue-500/50 text-blue-400 hover:bg-blue-500/30 hover:text-blue-300 disabled:opacity-50"
                   >
                     ✍️ Сценарий
                   </Button>
