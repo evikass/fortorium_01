@@ -169,6 +169,14 @@ export default function AnimationStudio() {
   const [editingScript, setEditingScript] = useState(false);
   const [editedScript, setEditedScript] = useState<string>('');
   
+  // Слайд-шоу предпросмотр
+  const [showSlideshow, setShowSlideshow] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  
+  // Автосохранение
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  
   // Озвучка
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [audioEnabled, setAudioEnabled] = useState(false);
@@ -955,6 +963,75 @@ export default function AnimationStudio() {
     });
   };
 
+  // ============================================
+  // СЛАЙД-ШОУ
+  // ============================================
+  const startSlideshow = () => {
+    if (!script?.scenes || Object.keys(sceneImages).length === 0) {
+      toast({
+        title: "⚠️ Нет изображений",
+        description: "Сначала сгенерируйте изображения для сцен",
+        variant: "destructive"
+      });
+      return;
+    }
+    setCurrentSlide(0);
+    setShowSlideshow(true);
+  };
+
+  const nextSlide = () => {
+    if (!script?.scenes) return;
+    const totalImages = Object.keys(sceneImages).length;
+    if (currentSlide < totalImages - 1) {
+      setCurrentSlide(prev => prev + 1);
+    } else {
+      setShowSlideshow(false);
+    }
+  };
+
+  const prevSlide = () => {
+    if (currentSlide > 0) {
+      setCurrentSlide(prev => prev - 1);
+    }
+  };
+
+  // Автопрокрутка слайд-шоу
+  useEffect(() => {
+    if (!showSlideshow || !script?.scenes) return;
+    
+    const timer = setTimeout(() => {
+      nextSlide();
+    }, 5000); // 5 секунд на слайд
+    
+    return () => clearTimeout(timer);
+  }, [showSlideshow, currentSlide]);
+
+  // ============================================
+  // АВТОСОХРАНЕНИЕ
+  // ============================================
+  useEffect(() => {
+    if (!autoSaveEnabled || !script) return;
+    
+    const interval = setInterval(() => {
+      const projectData = {
+        version: '2.1.0',
+        savedAt: new Date().toISOString(),
+        project: newProject,
+        script,
+        storyboard,
+        sceneImages,
+        characterImages,
+        workResult
+      };
+      
+      localStorage.setItem('fortorium_current_project', JSON.stringify(projectData));
+      setLastSaved(new Date());
+      console.log('🔄 Автосохранение выполнено');
+    }, 60000); // Каждую минуту
+    
+    return () => clearInterval(interval);
+  }, [autoSaveEnabled, script, newProject, storyboard, sceneImages, characterImages, workResult]);
+
   // Генерация видео из изображений
   const generateVideo = async () => {
     if (!script?.scenes || Object.keys(sceneImages).length === 0) {
@@ -1120,7 +1197,7 @@ export default function AnimationStudio() {
     if (!script) return;
     
     const projectData = {
-      version: '2.0.0',
+      version: '2.1.0',
       savedAt: new Date().toISOString(),
       project: newProject,
       script,
@@ -2253,6 +2330,14 @@ export default function AnimationStudio() {
                       {/* Export buttons row 2 */}
                       <div className="flex gap-2">
                         <Button
+                          onClick={startSlideshow}
+                          variant="outline"
+                          disabled={Object.keys(sceneImages).length === 0}
+                          className="flex-1 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 disabled:opacity-50"
+                        >
+                          🎬 Слайд-шоу
+                        </Button>
+                        <Button
                           onClick={copyScriptToClipboard}
                           variant="outline"
                           className="flex-1 border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
@@ -2848,6 +2933,103 @@ export default function AnimationStudio() {
         </DialogContent>
       </Dialog>
 
+      {/* Slideshow Modal */}
+      {showSlideshow && script?.scenes && (
+        <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
+          <div className="relative w-full h-full flex flex-col">
+            {/* Header */}
+            <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/80 to-transparent z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-white text-xl font-bold">{script.title}</h2>
+                  <span className="text-white/60 text-sm">
+                    Сцена {currentSlide + 1} из {Object.keys(sceneImages).length}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowSlideshow(false)}
+                  className="text-white hover:bg-white/10"
+                >
+                  ✕ Закрыть
+                </Button>
+              </div>
+            </div>
+
+            {/* Main Image */}
+            <div className="flex-1 flex items-center justify-center p-8">
+              {sceneImages[currentSlide]?.imageUrl ? (
+                <img
+                  src={sceneImages[currentSlide].imageUrl}
+                  alt={`Сцена ${currentSlide + 1}`}
+                  className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                />
+              ) : (
+                <div className="text-white/40 text-center">
+                  <Film className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p>Изображение не сгенерировано</p>
+                </div>
+              )}
+            </div>
+
+            {/* Scene Info */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+              <div className="max-w-4xl mx-auto">
+                <h3 className="text-white text-2xl font-bold mb-2">
+                  {script.scenes[currentSlide]?.title}
+                </h3>
+                <p className="text-white/70 mb-4">
+                  {script.scenes[currentSlide]?.description}
+                </p>
+                {script.scenes[currentSlide]?.dialogue?.length > 0 && (
+                  <div className="space-y-2">
+                    {script.scenes[currentSlide].dialogue.slice(0, 2).map((d: any, i: number) => (
+                      <p key={i} className="text-white/60 text-sm">
+                        <span className="text-amber-400 font-medium">{d.character}:</span> "{d.line}"
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="absolute left-4 top-1/2 -translate-y-1/2">
+              <Button
+                variant="ghost"
+                onClick={prevSlide}
+                disabled={currentSlide === 0}
+                className="text-white hover:bg-white/10 h-16 w-16 rounded-full"
+              >
+                ◀
+              </Button>
+            </div>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+              <Button
+                variant="ghost"
+                onClick={nextSlide}
+                className="text-white hover:bg-white/10 h-16 w-16 rounded-full"
+              >
+                ▶
+              </Button>
+            </div>
+
+            {/* Progress Dots */}
+            <div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex gap-2">
+              {Object.keys(sceneImages).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentSlide(i)}
+                  className={`w-3 h-3 rounded-full transition-all ${
+                    i === currentSlide ? 'bg-white scale-125' : 'bg-white/30 hover:bg-white/50'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="text-center py-6 text-white/40 text-sm border-t border-white/5">
         <div className="flex items-center justify-between max-w-7xl mx-auto px-4">
@@ -2857,7 +3039,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v2.0.0
+              v2.1.0
             </span>
           </div>
         </div>
@@ -2866,7 +3048,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.0.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.1.0</span>
         </div>
       </div>
     </div>
