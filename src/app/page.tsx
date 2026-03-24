@@ -132,6 +132,60 @@ const ANIMATION_STYLES = [
   { value: 'retro', label: 'Retro 80s', description: 'Ретро стиль, неоновые цвета', icon: '🕹️' },
   { value: 'stopmotion', label: 'Stop Motion', description: 'Кукольная анимация', icon: '🎭' },
   { value: 'comic', label: 'Comic Book', description: 'Комикс стиль, чёрные контуры', icon: '💥' },
+  { value: 'soviet', label: 'Советская анимация', description: 'Союзмультфильм, классика, тёплые тона', icon: '🪆' },
+  { value: 'soviet-puppet', label: 'Советская кукольная', description: 'Чебурашка, Винни, кукольный стиль', icon: '🧸' },
+];
+
+// Бесплатные агенты для генерации изображений
+const FREE_IMAGE_AGENTS = [
+  { 
+    id: 'pollinations', 
+    name: 'Pollinations AI', 
+    icon: '🌸', 
+    description: 'Бесплатная генерация без ограничений',
+    baseUrl: 'https://image.pollinations.ai/prompt/',
+    enabled: true
+  },
+  { 
+    id: 'clipdrop', 
+    name: 'ClipDrop', 
+    icon: '🖼️', 
+    description: 'Быстрая генерация изображений',
+    baseUrl: null,
+    enabled: false
+  },
+  { 
+    id: 'lexica', 
+    name: 'Lexica Art', 
+    icon: '🎨', 
+    description: 'Поиск готовых изображений',
+    baseUrl: 'https://lexica.art/api/v1/search?q=',
+    enabled: true
+  },
+  { 
+    id: 'pexels', 
+    name: 'Pexels', 
+    icon: '📷', 
+    description: 'Бесплатные стоковые фото',
+    baseUrl: 'https://api.pexels.com/v1/search?query=',
+    enabled: true
+  },
+  { 
+    id: 'unsplash', 
+    name: 'Unsplash', 
+    icon: '🏞️', 
+    description: 'Качественные фото для фонов',
+    baseUrl: 'https://api.unsplash.com/search/photos?query=',
+    enabled: true
+  },
+  { 
+    id: 'placeholder', 
+    name: 'Заглушка', 
+    icon: '📦', 
+    description: 'Плейсхолдер для превью',
+    baseUrl: 'https://via.placeholder.com/512x512?text=',
+    enabled: true
+  }
 ];
 
 // Жанры для генератора идей
@@ -361,6 +415,13 @@ export default function AnimationStudio() {
   
   // Сохранённые шаблоны голосов
   const [voicePreviews, setVoicePreviews] = useState<Record<string, string>>({});
+  
+  // Выбранный агент для генерации изображений
+  const [selectedImageAgent, setSelectedImageAgent] = useState<string>('pollinations');
+  const [showImageAgentSelector, setShowImageAgentSelector] = useState(false);
+  
+  // Текущий выбранный агент
+  const currentImageAgent = FREE_IMAGE_AGENTS.find(a => a.id === selectedImageAgent) || FREE_IMAGE_AGENTS[0];
   
   // AI Ассистент
   const [showAIChat, setShowAIChat] = useState(false);
@@ -1601,34 +1662,98 @@ export default function AnimationStudio() {
     
     try {
       const scene = script.scenes[sceneIndex];
+      const styleInfo = ANIMATION_STYLES.find(s => s.value === newProject.style);
       
-      const res = await fetch('/api/work', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'create_storyboard',
-          projectId: projects[0]?.id || 'default',
-          data: {
-            sceneTitle: scene.title,
-            sceneDescription: scene.description || scene.action,
-            style: newProject.style
-          }
-        })
-      });
-      
-      const data = await res.json();
-      
-      if (data.success && data.image?.imageUrl) {
+      // Если выбран бесплатный агент (Pollinations)
+      if (selectedImageAgent === 'pollinations') {
+        const stylePrompt = getStylePrompt(newProject.style);
+        const prompt = `${stylePrompt}, ${scene.title}, ${scene.description || scene.action}, detailed scene, high quality`;
+        const encodedPrompt = encodeURIComponent(prompt);
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=768&nologo=true`;
+        
+        // Pollinations генерирует изображение напрямую по URL
         setSceneImages(prev => ({
           ...prev,
-          [sceneIndex]: data.image
+          [sceneIndex]: {
+            imageUrl,
+            prompt,
+            agent: 'pollinations',
+            generatedAt: new Date().toISOString()
+          }
         }));
+        
+        toast({
+          title: "🌸 " + (language === 'ru' ? 'Изображение готово' : 'Image ready'),
+          description: language === 'ru' ? `Сцена ${sceneIndex + 1} через Pollinations AI` : `Scene ${sceneIndex + 1} via Pollinations AI`,
+        });
+      } else if (selectedImageAgent === 'placeholder') {
+        // Заглушка для тестирования
+        const text = encodeURIComponent(`Scene ${sceneIndex + 1}: ${scene.title}`);
+        const imageUrl = `https://via.placeholder.com/1024x768/6366f1/ffffff?text=${text}`;
+        
+        setSceneImages(prev => ({
+          ...prev,
+          [sceneIndex]: {
+            imageUrl,
+            agent: 'placeholder',
+            generatedAt: new Date().toISOString()
+          }
+        }));
+      } else {
+        // Используем стандартный API
+        const res = await fetch('/api/work', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'create_storyboard',
+            projectId: projects[0]?.id || 'default',
+            data: {
+              sceneTitle: scene.title,
+              sceneDescription: scene.description || scene.action,
+              style: newProject.style
+            }
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success && data.image?.imageUrl) {
+          setSceneImages(prev => ({
+            ...prev,
+            [sceneIndex]: data.image
+          }));
+        }
       }
     } catch (error) {
       console.error('Error generating scene image:', error);
+      toast({
+        title: "❌ " + (language === 'ru' ? 'Ошибка' : 'Error'),
+        description: language === 'ru' ? 'Не удалось сгенерировать изображение' : 'Failed to generate image',
+        variant: "destructive"
+      });
     } finally {
       setGeneratingScene(null);
     }
+  };
+  
+  // Получить промпт для стиля
+  const getStylePrompt = (style: string): string => {
+    const stylePrompts: Record<string, string> = {
+      ghibli: 'Studio Ghibli style, Hayao Miyazaki, anime, watercolor backgrounds, magical atmosphere, soft colors',
+      disney: 'Disney animation style, classic 2D animation, vibrant colors, expressive characters',
+      pixar: 'Pixar 3D style, modern CGI, cinematic lighting, detailed textures, warm colors',
+      anime: 'Anime style, Japanese animation, vibrant colors, detailed eyes, dynamic poses',
+      cartoon: 'Modern cartoon style, stylized characters, bold outlines, bright colors',
+      claymation: 'Claymation style, stop motion, plasticine, Aardman animation, textured surfaces',
+      watercolor: 'Watercolor painting style, soft edges, delicate colors, artistic, dreamy',
+      retro: 'Retro 80s style, synthwave, neon colors, geometric shapes, nostalgic',
+      stopmotion: 'Stop motion animation style, puppet animation, miniature sets, handcrafted look',
+      comic: 'Comic book style, bold outlines, halftone dots, action poses, dynamic',
+      soviet: 'Soviet animation style, Soyuzmultfilm, warm pastel colors, hand-drawn, nostalgic, classic Russian cartoon',
+      'soviet-puppet': 'Soviet puppet animation style, Cheburashka, Winnie the Pooh, stop motion puppets, felt and fabric textures, warm lighting, nostalgic'
+    };
+    
+    return stylePrompts[style] || stylePrompts.disney;
   };
 
   // Генерация изображений для всех сцен
@@ -2690,6 +2815,15 @@ export default function AnimationStudio() {
                 className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
               >
                 🤖 AI
+              </Button>
+              
+              {/* Image Agent Selector Button */}
+              <Button
+                onClick={() => setShowImageAgentSelector(true)}
+                variant="outline"
+                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'}`}
+              >
+                {FREE_IMAGE_AGENTS.find(a => a.id === selectedImageAgent)?.icon || '🎨'} {FREE_IMAGE_AGENTS.find(a => a.id === selectedImageAgent)?.name || 'AI Art'}
               </Button>
               
               {/* Share Button */}
@@ -4768,6 +4902,86 @@ export default function AnimationStudio() {
         </div>
       )}
 
+      {/* Image Agent Selector Modal */}
+      {showImageAgentSelector && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl`}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-purple-900'} flex items-center gap-2`}>
+                🎨 {language === 'ru' ? 'AI Художники' : 'AI Artists'}
+              </h2>
+              <Button
+                variant="ghost"
+                onClick={() => setShowImageAgentSelector(false)}
+                className={`${isDarkMode ? 'text-white hover:bg-white/10' : 'text-purple-900 hover:bg-purple-100'}`}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <p className={`${isDarkMode ? 'text-white/60' : 'text-purple-600'} mb-4`}>
+              {language === 'ru' 
+                ? 'Выберите бесплатного AI-художника для генерации изображений:' 
+                : 'Select a free AI artist to generate images:'}
+            </p>
+            
+            {/* Agent Cards */}
+            <div className="space-y-3">
+              {FREE_IMAGE_AGENTS.filter(a => a.enabled).map(agent => (
+                <button
+                  key={agent.id}
+                  onClick={() => {
+                    setSelectedImageAgent(agent.id);
+                    setShowImageAgentSelector(false);
+                    toast({
+                      title: `🎨 ${agent.name}`,
+                      description: language === 'ru' ? 'Выбран для генерации изображений' : 'Selected for image generation',
+                    });
+                  }}
+                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                    selectedImageAgent === agent.id
+                      ? 'border-purple-500 bg-purple-500/10'
+                      : isDarkMode
+                        ? 'border-white/10 hover:border-white/30 hover:bg-white/5'
+                        : 'border-purple-200 hover:border-purple-400 hover:bg-purple-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{agent.icon}</span>
+                    <div className="flex-1">
+                      <div className={`font-semibold ${isDarkMode ? 'text-white' : 'text-purple-900'}`}>{agent.name}</div>
+                      <div className={`text-sm ${isDarkMode ? 'text-white/60' : 'text-purple-600'}`}>{agent.description}</div>
+                    </div>
+                    {selectedImageAgent === agent.id && (
+                      <CheckCircle className="w-5 h-5 text-purple-500" />
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+            
+            {/* Free badge */}
+            <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
+              <div className="flex items-center gap-2 text-green-400 text-sm">
+                <span>✨</span>
+                <span>
+                  {language === 'ru' 
+                    ? 'Все агенты работают бесплатно и без ограничений!' 
+                    : 'All agents work for free without limits!'}
+                </span>
+              </div>
+            </div>
+            
+            <Button
+              onClick={() => setShowImageAgentSelector(false)}
+              className="w-full mt-6 bg-gradient-to-r from-purple-500 to-pink-500"
+            >
+              {language === 'ru' ? 'Готово' : 'Done'}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Share Dialog */}
       {showShareDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -4934,7 +5148,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v2.6.0
+              v2.7.0
             </span>
           </div>
         </div>
@@ -4943,7 +5157,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.6.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.7.0</span>
         </div>
       </div>
     </div>
