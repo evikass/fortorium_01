@@ -120,13 +120,30 @@ const AGENT_ROLES = [
   { value: 'blender', label: 'Blender 3D', icon: '🧊' },
 ];
 
-// Стили анимации
+// Расширенные стили анимации
 const ANIMATION_STYLES = [
-  { value: 'ghibli', label: 'Studio Ghibli', description: 'Миядзаки, акварель, магия' },
-  { value: 'disney', label: 'Disney 2D', description: 'Классическая диснеевская анимация' },
-  { value: 'pixar', label: 'Pixar 3D', description: 'Современный 3D, кинематографичность' },
-  { value: 'anime', label: 'Anime', description: 'Японская анимация, яркие цвета' },
-  { value: 'cartoon', label: 'Modern Cartoon', description: 'Современный мульт, яркий и весёлый' },
+  { value: 'ghibli', label: 'Studio Ghibli', description: 'Миядзаки, акварель, магия', icon: '🌸' },
+  { value: 'disney', label: 'Disney 2D', description: 'Классическая диснеевская анимация', icon: '🏰' },
+  { value: 'pixar', label: 'Pixar 3D', description: 'Современный 3D, кинематографичность', icon: '🧸' },
+  { value: 'anime', label: 'Anime', description: 'Японская анимация, яркие цвета', icon: '⚡' },
+  { value: 'cartoon', label: 'Modern Cartoon', description: 'Современный мульт, яркий и весёлый', icon: '🎨' },
+  { value: 'claymation', label: 'Claymation', description: 'Пластилиновая анимация, Aardman style', icon: '🗿' },
+  { value: 'watercolor', label: 'Watercolor', description: 'Акварельный стиль, нежные тона', icon: '🖼️' },
+  { value: 'retro', label: 'Retro 80s', description: 'Ретро стиль, неоновые цвета', icon: '🕹️' },
+  { value: 'stopmotion', label: 'Stop Motion', description: 'Кукольная анимация', icon: '🎭' },
+  { value: 'comic', label: 'Comic Book', description: 'Комикс стиль, чёрные контуры', icon: '💥' },
+];
+
+// Жанры для генератора идей
+const GENRES = [
+  { value: 'adventure', label: 'Приключение', icon: '🗺️' },
+  { value: 'fantasy', label: 'Фэнтези', icon: '✨' },
+  { value: 'scifi', label: 'Научная фантастика', icon: '🚀' },
+  { value: 'comedy', label: 'Комедия', icon: '😂' },
+  { value: 'drama', label: 'Драма', icon: '🎭' },
+  { value: 'musical', label: 'Мюзикл', icon: '🎵' },
+  { value: 'mystery', label: 'Детектив', icon: '🔍' },
+  { value: 'nature', label: 'Природа', icon: '🌿' },
 ];
 
 export default function AnimationStudio() {
@@ -134,6 +151,18 @@ export default function AnimationStudio() {
   const [activeTab, setActiveTab] = useState('studio');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  
+  // Тема (dark/light)
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  
+  // AI генератор идей
+  const [showIdeaGenerator, setShowIdeaGenerator] = useState(false);
+  const [selectedGenre, setSelectedGenre] = useState('adventure');
+  const [generatedIdeas, setGeneratedIdeas] = useState<string[]>([]);
+  const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
+  
+  // Навигация по сценам
+  const [selectedSceneIndex, setSelectedSceneIndex] = useState(0);
   
   // Данные студии
   const [director, setDirector] = useState<Director>({ name: 'Директор', status: 'active', budget: 0, reputation: 50 });
@@ -319,6 +348,120 @@ export default function AnimationStudio() {
       progress,
       style: ANIMATION_STYLES.find(s => s.value === newProject.style)?.label || newProject.style
     };
+  };
+
+  // ============================================
+  // AI ГЕНЕРАТОР ИДЕЙ
+  // ============================================
+  const generateIdeas = async () => {
+    setIsGeneratingIdeas(true);
+    setGeneratedIdeas([]);
+    
+    try {
+      const res = await fetch('/api/work', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generate_ideas',
+          genre: selectedGenre,
+          style: newProject.style
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (data.ideas) {
+        setGeneratedIdeas(data.ideas);
+        toast({
+          title: "💡 Идеи сгенерированы",
+          description: `Получено ${data.ideas.length} идей для вашего проекта`,
+        });
+      } else {
+        // Fallback: генерируем идеи локально
+        const fallbackIdeas = generateFallbackIdeas(selectedGenre);
+        setGeneratedIdeas(fallbackIdeas);
+      }
+    } catch (error) {
+      // Если API недоступен, показываем локальные идеи
+      const fallbackIdeas = generateFallbackIdeas(selectedGenre);
+      setGeneratedIdeas(fallbackIdeas);
+    } finally {
+      setIsGeneratingIdeas(false);
+    }
+  };
+
+  // Локальные идеи (fallback)
+  const generateFallbackIdeas = (genre: string): string[] => {
+    const ideasByGenre: Record<string, string[]> = {
+      adventure: [
+        "Маленький кораблик отправляется в плавание через океан, встречая дружелюбных китов и хитрых чаек",
+        "Группа друзей находит древнюю карту и отправляется на поиски затерянного города",
+        "Отважный почтальон должен доставить письмо через горы, леса и бурные реки"
+      ],
+      fantasy: [
+        "Девочка находит волшебную дверь в своем шкафу, ведущую в мир говорящих животных",
+        "Молодой волшебник должен спасти украденную звезду из замка злого колдуна",
+        "Заколдованный принц в образе лягушки ищет того, кто сможет его расколдовать"
+      ],
+      scifi: [
+        "Робот-няня на космической станции учится понимать человеческие эмоции",
+        "Команда юных исследователей находит планету, где растения могут петь",
+        "Мальчик находит старый космический корабль и отправляется в путешествие к звёздам"
+      ],
+      comedy: [
+        "Неуклюжий пингвин мечтает стать профессиональным танцором",
+        "Кот и мышь вынуждены работать вместе, чтобы спасти свой дом",
+        "Семья роботов пытается понять, почему люди смеются над шутками"
+      ],
+      drama: [
+        "Старый маяк хранит истории всех кораблей, которые он провожал",
+        "Дерево в парке вспоминает все поколения детей, которые росли рядом с ним",
+        "Два друга встречаются на том же месте каждые десять лет"
+      ],
+      musical: [
+        "Город, где все говорят пением, встречает гостя, который не умеет петь",
+        "Забытые инструменты в старом магазине мечтают снова звучать",
+        "Хор птиц готовится к великому весеннему концерту"
+      ],
+      mystery: [
+        "Детектив-белка расследует исчезновение всех орехов в лесу",
+        "Юный сыщик находит зашифрованные послания в старых книгах библиотеки",
+        "Команда друзей пытается разгадать тайну исчезнувшего призрака"
+      ],
+      nature: [
+        "Путешествие капли воды от горного ручья до океана",
+        "История о дереве, которое видело смену ста сезонов",
+        "Бабочка мечтает увидеть весь мир за свою короткую жизнь"
+      ]
+    };
+    
+    return ideasByGenre[genre] || ideasByGenre.adventure;
+  };
+
+  // Выбрать идею и применить к проекту
+  const applyIdea = (idea: string) => {
+    setNewProject(prev => ({
+      ...prev,
+      description: idea,
+      title: idea.split(' ').slice(0, 3).join(' ')
+    }));
+    setShowIdeaGenerator(false);
+    toast({
+      title: "✨ Идея применена",
+      description: "Теперь можете создать сценарий на основе этой идеи",
+    });
+  };
+
+  // ============================================
+  // ПЕРЕКЛЮЧЕНИЕ ТЕМЫ
+  // ============================================
+  const toggleTheme = () => {
+    setIsDarkMode(prev => !prev);
+    document.documentElement.classList.toggle('light-mode');
+    toast({
+      title: isDarkMode ? "☀️ Светлая тема" : "🌙 Тёмная тема",
+      description: "Тема интерфейса изменена",
+    });
   };
 
   // Форма нового проекта
@@ -1144,7 +1287,7 @@ export default function AnimationStudio() {
     
     const interval = setInterval(() => {
       const projectData = {
-        version: '2.2.0',
+        version: '2.3.0',
         savedAt: new Date().toISOString(),
         project: newProject,
         script,
@@ -1616,9 +1759,9 @@ export default function AnimationStudio() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' : 'bg-gradient-to-br from-slate-100 via-purple-100 to-slate-200'}`}>
       {/* Header */}
-      <header className="border-b border-white/10 bg-black/20 backdrop-blur-sm">
+      <header className={`border-b ${isDarkMode ? 'border-white/10 bg-black/20' : 'border-purple-200 bg-white/60'} backdrop-blur-sm`}>
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -1626,29 +1769,46 @@ export default function AnimationStudio() {
                 <Wand2 className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white tracking-wider">ФОРТОРИУМ</h1>
-                <p className="text-sm text-white/60">Анимационная студия будущего</p>
+                <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-purple-900'} tracking-wider`}>ФОРТОРИУМ</h1>
+                <p className={`text-sm ${isDarkMode ? 'text-white/60' : 'text-purple-600'}`}>Анимационная студия будущего</p>
               </div>
             </div>
 
             {/* Studio Stats */}
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
+              <div className={`flex items-center gap-2 px-3 py-1.5 ${isDarkMode ? 'bg-white/5' : 'bg-purple-100'} rounded-lg`}>
                 <span className="text-lg">👔</span>
-                <span className="text-white text-sm font-medium">{director.status === 'active' ? 'Директор онлайн' : 'Директор занят'}</span>
+                <span className={`${isDarkMode ? 'text-white' : 'text-purple-900'} text-sm font-medium`}>{director.status === 'active' ? 'Директор онлайн' : 'Директор занят'}</span>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
+              <div className={`flex items-center gap-2 px-3 py-1.5 ${isDarkMode ? 'bg-white/5' : 'bg-purple-100'} rounded-lg`}>
                 <span className="text-lg">🎬</span>
-                <span className="text-white text-sm font-medium">{projects.length} проектов</span>
+                <span className={`${isDarkMode ? 'text-white' : 'text-purple-900'} text-sm font-medium`}>{projects.length} проектов</span>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
+              <div className={`flex items-center gap-2 px-3 py-1.5 ${isDarkMode ? 'bg-white/5' : 'bg-purple-100'} rounded-lg`}>
                 <span className="text-lg">⭐</span>
-                <span className="text-white text-sm font-medium">{director.reputation}%</span>
+                <span className={`${isDarkMode ? 'text-white' : 'text-purple-900'} text-sm font-medium`}>{director.reputation}%</span>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
+              <div className={`flex items-center gap-2 px-3 py-1.5 ${isDarkMode ? 'bg-white/5' : 'bg-purple-100'} rounded-lg`}>
                 <span className="text-lg">👥</span>
-                <span className="text-white text-sm font-medium">{hiredAgents.length} агентов</span>
+                <span className={`${isDarkMode ? 'text-white' : 'text-purple-900'} text-sm font-medium`}>{hiredAgents.length} агентов</span>
               </div>
+              
+              {/* Theme Toggle */}
+              <Button
+                onClick={toggleTheme}
+                variant="outline"
+                className={`${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-purple-200 text-purple-900 hover:bg-purple-100'}`}
+              >
+                {isDarkMode ? '☀️' : '🌙'}
+              </Button>
+              
+              {/* Idea Generator Button */}
+              <Button
+                onClick={() => setShowIdeaGenerator(true)}
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+              >
+                💡 Идеи
+              </Button>
             </div>
           </div>
         </div>
@@ -1974,18 +2134,22 @@ export default function AnimationStudio() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm text-white/80">Стиль анимации</label>
+                    <label className={`text-sm ${isDarkMode ? 'text-white/80' : 'text-purple-700'}`}>Стиль анимации</label>
                     <Select
                       value={newProject.style}
                       onValueChange={value => setNewProject({ ...newProject, style: value })}
                     >
-                      <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                      <SelectTrigger className={`${isDarkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-purple-200 text-purple-900'}`}>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-white/10">
+                      <SelectContent className={`${isDarkMode ? 'bg-slate-800 border-white/10' : 'bg-white border-purple-200'}`}>
                         {ANIMATION_STYLES.map(style => (
-                          <SelectItem key={style.value} value={style.value}>
-                            {style.label}
+                          <SelectItem key={style.value} value={style.value} className={isDarkMode ? 'text-white' : 'text-purple-900'}>
+                            <span className="flex items-center gap-2">
+                              <span>{style.icon}</span>
+                              <span>{style.label}</span>
+                              <span className={`text-xs ${isDarkMode ? 'text-white/50' : 'text-purple-400'}`}>— {style.description}</span>
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1994,7 +2158,7 @@ export default function AnimationStudio() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm text-white/80">Описание идеи</label>
+                  <label className={`text-sm ${isDarkMode ? 'text-white/80' : 'text-purple-700'}`}>Описание идеи</label>
                   <Textarea
                     value={newProject.description}
                     onChange={e => setNewProject({ ...newProject, description: e.target.value })}
@@ -3252,6 +3416,113 @@ export default function AnimationStudio() {
         </div>
       )}
 
+      {/* AI Idea Generator Modal */}
+      {showIdeaGenerator && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto shadow-2xl`}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-purple-900'} flex items-center gap-2`}>
+                💡 Генератор идей
+              </h2>
+              <Button
+                variant="ghost"
+                onClick={() => setShowIdeaGenerator(false)}
+                className={`${isDarkMode ? 'text-white hover:bg-white/10' : 'text-purple-900 hover:bg-purple-100'}`}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <p className={`${isDarkMode ? 'text-white/60' : 'text-purple-600'} mb-4`}>
+              Выберите жанр и получите уникальные идеи для вашего мультфильма
+            </p>
+            
+            {/* Genre Selection */}
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              {GENRES.map(genre => (
+                <button
+                  key={genre.value}
+                  onClick={() => setSelectedGenre(genre.value)}
+                  className={`p-3 rounded-lg border-2 transition-all text-center ${
+                    selectedGenre === genre.value
+                      ? 'border-purple-500 bg-purple-500/20'
+                      : isDarkMode
+                        ? 'border-white/10 bg-white/5 hover:border-white/20'
+                        : 'border-purple-200 bg-purple-50 hover:border-purple-300'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">{genre.icon}</div>
+                  <div className={`text-sm ${isDarkMode ? 'text-white' : 'text-purple-900'}`}>{genre.label}</div>
+                </button>
+              ))}
+            </div>
+            
+            {/* Generate Button */}
+            <Button
+              onClick={generateIdeas}
+              disabled={isGeneratingIdeas}
+              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 py-6 text-lg mb-6"
+            >
+              {isGeneratingIdeas ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Генерируем идеи...
+                </>
+              ) : (
+                <>✨ Сгенерировать идеи</>
+              )}
+            </Button>
+            
+            {/* Generated Ideas */}
+            {generatedIdeas.length > 0 && (
+              <div className="space-y-3">
+                <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-purple-900'}`}>
+                  Выберите идею:
+                </h3>
+                {generatedIdeas.map((idea, index) => (
+                  <div
+                    key={index}
+                    onClick={() => applyIdea(idea)}
+                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                      isDarkMode
+                        ? 'border-white/10 bg-white/5 hover:border-purple-500 hover:bg-purple-500/10'
+                        : 'border-purple-200 bg-purple-50 hover:border-purple-400 hover:bg-purple-100'
+                    }`}
+                  >
+                    <p className={`${isDarkMode ? 'text-white' : 'text-purple-900'}`}>{idea}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Scene Navigation (When script is loaded) */}
+      {script?.scenes && script.scenes.length > 0 && (
+        <div className={`fixed left-4 top-1/2 -translate-y-1/2 z-40 ${isDarkMode ? 'bg-black/40' : 'bg-white/80'} backdrop-blur-sm rounded-xl p-2 border ${isDarkMode ? 'border-white/10' : 'border-purple-200'}`}>
+          <div className="space-y-2">
+            <div className={`text-xs ${isDarkMode ? 'text-white/60' : 'text-purple-600'} text-center mb-2`}>Сцены</div>
+            {script.scenes.map((scene: any, index: number) => (
+              <button
+                key={index}
+                onClick={() => setSelectedSceneIndex(index)}
+                className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-medium transition-all ${
+                  selectedSceneIndex === index
+                    ? 'bg-purple-500 text-white'
+                    : isDarkMode
+                      ? 'bg-white/10 text-white hover:bg-white/20'
+                      : 'bg-purple-100 text-purple-900 hover:bg-purple-200'
+                } ${sceneImages[index] ? 'ring-2 ring-green-500/50' : ''}`}
+                title={scene.title}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="text-center py-6 text-white/40 text-sm border-t border-white/5">
         <div className="flex items-center justify-between max-w-7xl mx-auto px-4">
@@ -3261,7 +3532,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v2.2.0
+              v2.3.0
             </span>
           </div>
         </div>
@@ -3270,7 +3541,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.2.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.3.0</span>
         </div>
       </div>
     </div>
