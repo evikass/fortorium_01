@@ -351,6 +351,18 @@ export default function AnimationStudio() {
   // Справка по горячим клавишам
   const [showHotkeysHelp, setShowHotkeysHelp] = useState(false);
   
+  // AI Ассистент
+  const [showAIChat, setShowAIChat] = useState(false);
+  const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const [aiInput, setAiInput] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  
+  // Таймлайн сцен
+  const [showTimeline, setShowTimeline] = useState(true);
+  
+  // История версий
+  const [projectVersions, setProjectVersions] = useState<{ timestamp: Date; data: any; label: string }[]>([]);
+  
   // Данные студии
   const [director, setDirector] = useState<Director>({ name: 'Директор', status: 'active', budget: 0, reputation: 50 });
   const [hiredAgents, setHiredAgents] = useState<HiredAgent[]>([]);
@@ -743,6 +755,145 @@ export default function AnimationStudio() {
       title: language === 'ru' ? "🇬🇧 English" : "🇷🇺 Русский",
       description: language === 'ru' ? "Language changed" : "Язык изменён",
     });
+  };
+
+  // ============================================
+  // AI АССИСТЕНТ
+  // ============================================
+  const sendAiMessage = async () => {
+    if (!aiInput.trim()) return;
+    
+    const userMessage = aiInput.trim();
+    setAiInput('');
+    setAiMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setIsAiLoading(true);
+    
+    try {
+      // Формируем контекст для AI
+      const context = {
+        project: newProject,
+        script: script,
+        hasImages: Object.keys(sceneImages).length,
+        hasCharacters: script?.characters?.length || 0,
+        hasScenes: script?.scenes?.length || 0,
+        style: newProject.style,
+        language: language
+      };
+      
+      const res = await fetch('/api/work', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'ai_assistant',
+          message: userMessage,
+          context
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (data.response) {
+        setAiMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+      } else {
+        // Fallback ответ
+        const fallbackResponse = getFallbackAiResponse(userMessage, context);
+        setAiMessages(prev => [...prev, { role: 'assistant', content: fallbackResponse }]);
+      }
+    } catch (error) {
+      // Fallback при ошибке
+      const fallbackResponse = getFallbackAiResponse(userMessage, {
+        project: newProject,
+        script: script,
+        hasImages: Object.keys(sceneImages).length,
+        hasCharacters: script?.characters?.length || 0,
+        hasScenes: script?.scenes?.length || 0,
+        style: newProject.style,
+        language: language
+      });
+      setAiMessages(prev => [...prev, { role: 'assistant', content: fallbackResponse }]);
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  // Fallback ответы AI
+  const getFallbackAiResponse = (message: string, context: any): string => {
+    const lowerMessage = message.toLowerCase();
+    const isRu = language === 'ru';
+    
+    if (lowerMessage.includes('помощь') || lowerMessage.includes('help')) {
+      return isRu 
+        ? '🎬 **Помощь по ФОРТОРИУМ:**\n\n1. **Создание проекта** - заполните название и описание\n2. **Генерация сценария** - нажмите "📝 Сценарий"\n3. **Изображения** - нажмите "🎨" для генерации\n4. **Презентация** - нажмите "📽️" для просмотра\n\nГорячие клавиши: ⌨️ в шапке'
+        : '🎬 **FORTORIUM Help:**\n\n1. **Create project** - fill title and description\n2. **Generate script** - click "📝 Script"\n3. **Images** - click "🎨" to generate\n4. **Presentation** - click "📽️" to view\n\nHotkeys: ⌨️ in header';
+    }
+    
+    if (lowerMessage.includes('идея') || lowerMessage.includes('idea')) {
+      return isRu
+        ? '💡 **Генерация идей:**\n\nНажмите кнопку "💡 Идеи" в шапке и выберите жанр!\n\nДоступные жанры:\n• 🗺️ Приключение\n• ✨ Фэнтези\n• 🚀 Sci-Fi\n• 😂 Комедия\n• 🎭 Драма'
+        : '💡 **Idea Generation:**\n\nClick "💡 Ideas" button in header and select a genre!\n\nAvailable genres:\n• 🗺️ Adventure\n• ✨ Fantasy\n• 🚀 Sci-Fi\n• 😂 Comedy\n• 🎭 Drama';
+    }
+    
+    if (lowerMessage.includes('стиль') || lowerMessage.includes('style')) {
+      return isRu
+        ? '🎨 **Стили анимации:**\n\n• 🌸 Studio Ghibli - Миядзаки, магия\n• 🏰 Disney 2D - классика\n• 🧸 Pixar 3D - современный 3D\n• ⚡ Anime - японский стиль\n• 🗿 Claymation - пластилин\n• 🖼️ Watercolor - акварель\n• 🕹️ Retro 80s - неон\n• 💥 Comic Book - комикс'
+        : '🎨 **Animation Styles:**\n\n• 🌸 Studio Ghibli - Miyazaki, magic\n• 🏰 Disney 2D - classic\n• 🧸 Pixar 3D - modern 3D\n• ⚡ Anime - Japanese style\n• 🗿 Claymation - clay\n• 🖼️ Watercolor - watercolor\n• 🕹️ Retro 80s - neon\n• 💥 Comic Book - comic';
+    }
+    
+    if (lowerMessage.includes('сцен') || lowerMessage.includes('scene')) {
+      const sceneCount = context.hasScenes;
+      return isRu
+        ? `🎬 **Информация о сценах:**\n\nВ вашем проекте: **${sceneCount}** сцен\n\nНавигация: используйте боковую панель слева или стрелки ←/→ в режиме презентации.`
+        : `🎬 **Scene Information:**\n\nYour project has: **${sceneCount}** scenes\n\nNavigation: use sidebar on the left or arrows ←/→ in presentation mode.`;
+    }
+    
+    // Дефолтный ответ
+    return isRu
+      ? '🤖 Привет! Я AI-ассистент ФОРТОРИУМ.\n\nМогу помочь с:\n• Созданием сценария\n• Выбором стиля анимации\n• Идеями для проекта\n• Навигацией\n\nЗадайте вопрос!'
+      : '🤖 Hello! I\'m FORTORIUM AI assistant.\n\nI can help with:\n• Script creation\n• Animation style selection\n• Project ideas\n• Navigation\n\nAsk me anything!';
+  };
+
+  // Быстрые команды для AI
+  const quickAiCommands = [
+    { label: language === 'ru' ? '💡 Идеи' : '💡 Ideas', command: language === 'ru' ? 'дай идеи для проекта' : 'give me project ideas' },
+    { label: language === 'ru' ? '🎨 Стили' : '🎨 Styles', command: language === 'ru' ? 'расскажи о стилях' : 'tell me about styles' },
+    { label: language === 'ru' ? '📊 Статус' : '📊 Status', command: language === 'ru' ? 'статус проекта' : 'project status' },
+    { label: language === 'ru' ? '❓ Помощь' : '❓ Help', command: language === 'ru' ? 'помощь' : 'help' },
+  ];
+
+  // ============================================
+  // ИСТОРИЯ ВЕРСИЙ
+  // ============================================
+  const saveVersion = (label: string = 'Auto-save') => {
+    const version = {
+      timestamp: new Date(),
+      data: {
+        project: newProject,
+        script,
+        sceneImages,
+        characterImages,
+        workResult
+      },
+      label
+    };
+    setProjectVersions(prev => [version, ...prev.slice(0, 19)]); // Храним до 20 версий
+    toast({
+      title: language === 'ru' ? "📦 Версия сохранена" : "📦 Version saved",
+      description: label,
+    });
+  };
+
+  const restoreVersion = (version: typeof projectVersions[0]) => {
+    if (version?.data) {
+      setNewProject(version.data.project || newProject);
+      if (version.data.script) setScript(version.data.script);
+      if (version.data.sceneImages) setSceneImages(version.data.sceneImages);
+      if (version.data.characterImages) setCharacterImages(version.data.characterImages);
+      if (version.data.workResult) setWorkResult(version.data.workResult);
+      toast({
+        title: language === 'ru' ? "⏪ Версия восстановлена" : "⏪ Version restored",
+        description: `${version.label} (${version.timestamp?.toLocaleString?.() || 'Unknown'})`,
+      });
+    }
   };
 
   // Форма нового проекта
@@ -1568,7 +1719,7 @@ export default function AnimationStudio() {
     
     const interval = setInterval(() => {
       const projectData = {
-        version: '2.4.0',
+        version: '2.5.0',
         savedAt: new Date().toISOString(),
         project: newProject,
         script,
@@ -2116,6 +2267,14 @@ export default function AnimationStudio() {
                 className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
               >
                 💡 {language === 'ru' ? 'Идеи' : 'Ideas'}
+              </Button>
+              
+              {/* AI Assistant Button */}
+              <Button
+                onClick={() => setShowAIChat(true)}
+                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
+              >
+                🤖 AI
               </Button>
             </div>
           </div>
@@ -4040,6 +4199,183 @@ export default function AnimationStudio() {
         </div>
       )}
 
+      {/* AI Chat Modal */}
+      {showAIChat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-2xl w-full max-w-lg mx-4 h-[600px] flex flex-col shadow-2xl`}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-purple-900'} flex items-center gap-2`}>
+                🤖 {language === 'ru' ? 'AI Ассистент' : 'AI Assistant'}
+              </h2>
+              <Button
+                variant="ghost"
+                onClick={() => setShowAIChat(false)}
+                className={`${isDarkMode ? 'text-white hover:bg-white/10' : 'text-purple-900 hover:bg-purple-100'}`}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            {/* Quick Commands */}
+            <div className="p-3 border-b border-white/10 flex gap-2 flex-wrap">
+              {quickAiCommands.map((cmd, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setAiInput(cmd.command);
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-sm ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-purple-100 text-purple-900 hover:bg-purple-200'} transition-all`}
+                >
+                  {cmd.label}
+                </button>
+              ))}
+            </div>
+            
+            {/* Messages */}
+            <div className="flex-1 overflow-auto p-4 space-y-4">
+              {aiMessages.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-5xl mb-4">🤖</div>
+                  <p className={`${isDarkMode ? 'text-white/60' : 'text-purple-600'}`}>
+                    {language === 'ru' 
+                      ? 'Привет! Я AI-ассистент. Задайте мне вопрос о вашем проекте.'
+                      : 'Hello! I\'m AI assistant. Ask me anything about your project.'}
+                  </p>
+                </div>
+              ) : (
+                aiMessages.map((msg, index) => (
+                  <div
+                    key={index}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[80%] p-3 rounded-2xl ${
+                        msg.role === 'user'
+                          ? 'bg-purple-500 text-white rounded-br-md'
+                          : isDarkMode
+                            ? 'bg-white/10 text-white rounded-bl-md'
+                            : 'bg-purple-100 text-purple-900 rounded-bl-md'
+                      }`}
+                    >
+                      <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+              {isAiLoading && (
+                <div className="flex justify-start">
+                  <div className={`${isDarkMode ? 'bg-white/10' : 'bg-purple-100'} p-3 rounded-2xl rounded-bl-md`}>
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-purple-900'}`}>
+                        {language === 'ru' ? 'Думаю...' : 'Thinking...'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Input */}
+            <div className="p-4 border-t border-white/10">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={aiInput}
+                  onChange={(e) => setAiInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && sendAiMessage()}
+                  placeholder={language === 'ru' ? 'Введите сообщение...' : 'Type a message...'}
+                  className={`flex-1 px-4 py-2 rounded-xl ${isDarkMode ? 'bg-white/5 border-white/10 text-white placeholder:text-white/40' : 'bg-purple-50 border-purple-200 text-purple-900 placeholder:text-purple-400'} border focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                />
+                <Button
+                  onClick={sendAiMessage}
+                  disabled={!aiInput.trim() || isAiLoading}
+                  className="bg-purple-500 hover:bg-purple-600 disabled:opacity-50 rounded-xl px-4"
+                >
+                  📤
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scene Timeline */}
+      {script?.scenes && showTimeline && !presentationMode && (
+        <div className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-40 ${isDarkMode ? 'bg-black/80' : 'bg-white/90'} backdrop-blur-sm rounded-xl p-3 border ${isDarkMode ? 'border-white/10' : 'border-purple-200'} shadow-2xl max-w-4xl w-full mx-4`}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-purple-900'}`}>
+              📊 {language === 'ru' ? 'Таймлайн' : 'Timeline'}
+            </span>
+            <button
+              onClick={() => setShowTimeline(false)}
+              className={`ml-auto ${isDarkMode ? 'text-white/40 hover:text-white' : 'text-purple-400 hover:text-purple-600'}`}
+            >
+              ✕
+            </button>
+          </div>
+          <div className="flex items-center gap-1 overflow-x-auto pb-2">
+            {script.scenes.map((scene: any, index: number) => {
+              const totalDuration = script.scenes.reduce((sum: number, s: any) => sum + (s.duration || 5), 0);
+              const width = ((scene.duration || 5) / totalDuration) * 100;
+              
+              return (
+                <div
+                  key={index}
+                  onClick={() => setSelectedSceneIndex(index)}
+                  className={`relative cursor-pointer group transition-all ${
+                    selectedSceneIndex === index ? 'ring-2 ring-purple-500' : ''
+                  }`}
+                  style={{ minWidth: `${Math.max(width * 3, 40)}px` }}
+                >
+                  <div
+                    className={`h-8 rounded ${sceneImages[index] 
+                      ? selectedSceneIndex === index 
+                        ? 'bg-green-500' 
+                        : 'bg-green-500/60'
+                      : selectedSceneIndex === index
+                        ? 'bg-purple-500'
+                        : isDarkMode 
+                          ? 'bg-white/20' 
+                          : 'bg-purple-200'
+                    } flex items-center justify-center`}
+                  >
+                    <span className={`text-xs font-medium ${isDarkMode ? 'text-white' : 'text-purple-900'}`}>
+                      {index + 1}
+                    </span>
+                  </div>
+                  <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded ${isDarkMode ? 'bg-slate-700' : 'bg-purple-100'} text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 ${isDarkMode ? 'text-white' : 'text-purple-900'}`}>
+                    {scene.title} ({scene.duration || 5}с)
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <span className={`text-xs ${isDarkMode ? 'text-white/40' : 'text-purple-400'}`}>
+              {language === 'ru' ? 'Всего:' : 'Total:'} {script.totalDuration || script.scenes.reduce((sum: number, s: any) => sum + (s.duration || 0), 0)}{language === 'ru' ? 'с' : 's'}
+            </span>
+            <span className={`text-xs ${isDarkMode ? 'text-white/40' : 'text-purple-400'}`}>
+              {language === 'ru' ? 'Зелёный = изображение есть' : 'Green = image exists'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Version History Button */}
+      {projectVersions.length > 0 && (
+        <div className={`fixed left-4 bottom-4 z-40 ${isDarkMode ? 'bg-black/40' : 'bg-white/80'} backdrop-blur-sm rounded-xl p-2 border ${isDarkMode ? 'border-white/10' : 'border-purple-200'}`}>
+          <button
+            onClick={() => setShowTimeline(!showTimeline)}
+            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-purple-100 text-purple-900 hover:bg-purple-200'}`}
+            title={language === 'ru' ? 'Показать/скрыть таймлайн' : 'Show/hide timeline'}
+          >
+            📊
+          </button>
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="text-center py-6 text-white/40 text-sm border-t border-white/5">
         <div className="flex items-center justify-between max-w-7xl mx-auto px-4">
@@ -4049,7 +4385,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v2.4.0
+              v2.5.0
             </span>
           </div>
         </div>
@@ -4058,7 +4394,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.4.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v2.5.0</span>
         </div>
       </div>
     </div>
