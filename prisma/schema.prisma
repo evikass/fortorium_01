@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL") // Vercel Postgres
+  directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
 // Анимационный проект
@@ -18,18 +19,18 @@ model AnimationProject {
   style       String?  // Ghibli, Disney, Pixar, etc.
   duration    Int      @default(30) // в секундах
   status      String   @default("draft") // draft, in_progress, completed, error
-  
+
   // Результаты
   finalVideoUrl String?
   thumbnailUrl  String?
-  
+
   // Настройки Blender
   blenderScenePath String?
   useBlender       Boolean @default(false)
-  
+
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  
+
   tasks     AgentTask[]
   assets    Asset[]
   scenes    Scene[]
@@ -44,10 +45,10 @@ model Agent {
   description String?
   status      String @default("idle") // idle, busy, error
   config      String? // JSON конфигурация
-  
+
   lastActiveAt DateTime?
   createdAt    DateTime @default(now())
-  
+
   tasks AgentTask[]
 }
 
@@ -57,7 +58,7 @@ model AgentTask {
   projectId   String
   agentId     String
   parentTaskId String?
-  
+
   type        String // write_scenario, generate_image, animate, voice, edit, blender_render
   title       String
   description String?
@@ -66,15 +67,15 @@ model AgentTask {
   status      String @default("pending") // pending, in_progress, completed, error
   error       String?
   priority    Int    @default(5) // 1-10
-  
+
   startedAt   DateTime?
   completedAt DateTime?
   createdAt   DateTime @default(now())
-  
-  project     AnimationProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  agent       Agent           @relation(fields: [agentId], references: [id])
-  parentTask  AgentTask?      @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
-  subTasks    AgentTask[]     @relation("TaskHierarchy")
+
+  project    AnimationProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  agent      Agent            @relation(fields: [agentId], references: [id])
+  parentTask AgentTask?       @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subTasks   AgentTask[]      @relation("TaskHierarchy")
 }
 
 // Сцена мультфильма
@@ -82,22 +83,22 @@ model Scene {
   id          String @id @default(cuid())
   projectId   String
   order       Int
-  
+
   title       String
   description String
   duration    Float @default(5.0) // секунды
-  
+
   // Результаты
   imageUrl    String?
   videoUrl    String?
   audioUrl    String?
-  
+
   // Blender
   blenderFile String?
   cameraPath  String?
-  
+
   createdAt   DateTime @default(now())
-  
+
   project     AnimationProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
@@ -110,9 +111,9 @@ model Asset {
   description String?
   url         String
   metadata    String? // JSON метаданные
-  
+
   createdAt   DateTime @default(now())
-  
+
   project     AnimationProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
@@ -124,9 +125,9 @@ model ProjectLog {
   level     String // info, warning, error
   message   String
   metadata  String? // JSON
-  
+
   createdAt DateTime @default(now())
-  
+
   project   AnimationProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
@@ -144,10 +145,10 @@ model BlenderConnection {
 
 // Шаблон персонажа
 model CharacterTemplate {
-  id          String @id @default(cuid())
-  name        String
-  description String
-  stylePrompt String // промпт для генерации
-  referenceImages String? // JSON массив URL
-  createdAt   DateTime @default(now())
+  id               String   @id @default(cuid())
+  name             String
+  description      String
+  stylePrompt      String // промпт для генерации
+  referenceImages  String? // JSON массив URL
+  createdAt        DateTime @default(now())
 }
