@@ -592,7 +592,7 @@ export default function AnimationStudio() {
     if (!script) return;
     
     const projectData = {
-      version: '1.4.0',
+      version: '1.5.0',
       savedAt: new Date().toISOString(),
       project: newProject,
       script,
@@ -736,8 +736,7 @@ export default function AnimationStudio() {
       const data = await res.json();
       if (data.success) {
         setProjects([data.project, ...projects]);
-        setNewProject({ title: '', description: '', style: 'disney', duration: 30 });
-        setActiveTab('team');
+        // НЕ переключаем вкладку - остаёмся на студии
       }
     } catch (error) {
       console.error('Error creating project:', error);
@@ -1915,44 +1914,141 @@ export default function AnimationStudio() {
               </div>
             </div>
 
-            {projects.length === 0 ? (
+            {/* Текущий проект из сессии */}
+            {script && (
+              <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 flex items-center justify-center text-2xl">
+                        🎬
+                      </div>
+                      <div>
+                        <CardTitle className="text-white">{script.title || newProject.title}</CardTitle>
+                        <CardDescription className="text-white/60">{script.logline || newProject.description}</CardDescription>
+                      </div>
+                    </div>
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                      Текущий проект
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className="p-2 bg-white/5 rounded text-center">
+                      <div className="text-2xl">📝</div>
+                      <div className="text-white font-bold">{script.scenes?.length || 0}</div>
+                      <div className="text-white/50 text-xs">Сцен</div>
+                    </div>
+                    <div className="p-2 bg-white/5 rounded text-center">
+                      <div className="text-2xl">🎨</div>
+                      <div className="text-white font-bold">{Object.keys(sceneImages).length}</div>
+                      <div className="text-white/50 text-xs">Изображений</div>
+                    </div>
+                    <div className="p-2 bg-white/5 rounded text-center">
+                      <div className="text-2xl">👥</div>
+                      <div className="text-white font-bold">{script.characters?.length || 0}</div>
+                      <div className="text-white/50 text-xs">Персонажей</div>
+                    </div>
+                    <div className="p-2 bg-white/5 rounded text-center">
+                      <div className="text-2xl">⏱️</div>
+                      <div className="text-white font-bold">{script.totalDuration || 30}с</div>
+                      <div className="text-white/50 text-xs">Длительность</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 text-sm text-white/60 mb-4">
+                    <span>🎨 {ANIMATION_STYLES.find(s => s.value === newProject.style)?.label}</span>
+                    <span>🎭 {script.mood || 'Приключение'}</span>
+                  </div>
+
+                  {/* Персонажи */}
+                  {script.characters?.length > 0 && (
+                    <div className="mb-4">
+                      <div className="text-white/60 text-xs mb-2">Персонажи:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {script.characters.map((c: any, i: number) => (
+                          <Badge key={i} variant="outline" className="border-amber-500/30 text-amber-300">
+                            {c.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-4 border-t border-white/10">
+                    <Button
+                      onClick={() => setActiveTab('studio')}
+                      variant="outline"
+                      className="flex-1 border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
+                    >
+                      ✏️ Редактировать
+                    </Button>
+                    <Button
+                      onClick={exportProject}
+                      variant="outline"
+                      className="flex-1 border-green-500/30 text-green-300 hover:bg-green-500/10"
+                    >
+                      📥 Экспорт
+                    </Button>
+                    <Button
+                      onClick={generateAllSceneImages}
+                      disabled={isLoading}
+                      className="flex-1 bg-gradient-to-r from-pink-500 to-rose-500"
+                    >
+                      🎨 Генерировать все
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Проекты из БД */}
+            {projects.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Сохранённые проекты</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  {projects.map(project => (
+                    <Card key={project.id} className="bg-white/5 border-white/10">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-white">{project.title}</CardTitle>
+                            <CardDescription className="text-white/60">{project.description}</CardDescription>
+                          </div>
+                          <Badge className={
+                            project.status === 'completed' ? 'bg-green-500' :
+                            project.status === 'in_progress' ? 'bg-yellow-500' : 'bg-gray-500'
+                          }>
+                            {project.status}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center gap-4 text-sm text-white/60">
+                          <span>🎨 {ANIMATION_STYLES.find(s => s.value === project.style)?.label}</span>
+                          <span>⏱️ {project.duration}с</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Пустое состояние */}
+            {projects.length === 0 && !script && (
               <Card className="bg-white/5 border-white/10 border-dashed">
                 <CardContent className="py-12 text-center">
                   <Film className="w-12 h-12 text-white/20 mx-auto mb-4" />
-                  <p className="text-white/60 mb-4">Нет активных проектов</p>
+                  <p className="text-white/60 mb-4">Нет проектов</p>
+                  <p className="text-white/40 text-sm mb-4">Создайте проект на вкладке "Студия"</p>
                   <Button onClick={() => setActiveTab('studio')} className="bg-gradient-to-r from-purple-500 to-pink-500">
                     <Plus className="w-4 h-4 mr-2" />
-                    Создать первый проект
+                    Перейти к созданию
                   </Button>
                 </CardContent>
               </Card>
-            ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {projects.map(project => (
-                  <Card key={project.id} className="bg-white/5 border-white/10">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-white">{project.title}</CardTitle>
-                          <CardDescription className="text-white/60">{project.description}</CardDescription>
-                        </div>
-                        <Badge className={
-                          project.status === 'completed' ? 'bg-green-500' :
-                          project.status === 'in_progress' ? 'bg-yellow-500' : 'bg-gray-500'
-                        }>
-                          {project.status}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center gap-4 text-sm text-white/60">
-                        <span>🎨 {ANIMATION_STYLES.find(s => s.value === project.style)?.label}</span>
-                        <span>⏱️ {project.duration}с</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
             )}
           </TabsContent>
         </Tabs>
@@ -2069,7 +2165,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v1.4.0
+              v1.5.0
             </span>
           </div>
         </div>
@@ -2078,7 +2174,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v1.4.0</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v1.5.0</span>
         </div>
       </div>
     </div>
