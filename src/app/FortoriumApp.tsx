@@ -133,11 +133,19 @@ const getStyleLabel = (styleValue: string | undefined | null): string => {
 const isValidProject = (data: unknown): data is Project => {
   if (typeof data !== 'object' || data === null) return false;
   const obj = data as Record<string, unknown>;
-  return (
-    typeof obj.id === 'string' &&
-    typeof obj.title === 'string' &&
-    typeof obj.style === 'string'
-  );
+  
+  // Check for required fields
+  if (typeof obj.id !== 'string') return false;
+  if (typeof obj.title !== 'string') return false;
+  if (typeof obj.style !== 'string') return false;
+  
+  // Reject old project format (from agents/director project)
+  // Old projects had 'agents', 'director', 'candidates' fields
+  if ('agents' in obj || 'director' in obj || 'candidates' in obj) {
+    return false;
+  }
+  
+  return true;
 };
 
 const safeParseJson = <T,>(jsonString: string, fallback: T): T => {
