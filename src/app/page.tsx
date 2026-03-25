@@ -3462,16 +3462,27 @@ export default function AnimationStudio() {
       if (saved) {
         const data = JSON.parse(saved);
         if (data.script) {
-          setScript(data.script);
+          // Валидация структуры script
+          const validatedScript = {
+            ...data.script,
+            characters: Array.isArray(data.script.characters) ? data.script.characters : [],
+            scenes: Array.isArray(data.script.scenes) ? data.script.scenes : [],
+            title: data.script.title || 'Без названия',
+            totalDuration: data.script.totalDuration || 0
+          };
+          
+          setScript(validatedScript);
           setNewProject(data.project || newProject);
-          setStoryboard(data.storyboard);
+          setStoryboard(data.storyboard || null);
           setSceneImages(data.sceneImages || {});
-          setWorkResult(data.workResult);
+          setWorkResult(data.workResult || null);
           console.log('📂 Проект загружен из localStorage');
         }
       }
     } catch (e) {
       console.error('Ошибка загрузки из localStorage:', e);
+      // Очищаем повреждённые данные
+      localStorage.removeItem('fortorium_current_project');
     }
   };
   
@@ -7198,7 +7209,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v3.1.8
+              v3.1.9
           </span>
           </div>
         </div>
@@ -7207,7 +7218,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v3.1.8</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v3.1.9</span>
         </div>
       </div>
     </div>
