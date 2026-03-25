@@ -128,12 +128,6 @@ const getStyleLabel = (styleValue: string | undefined | null): string => {
   return style?.label ?? 'Неизвестный стиль';
 };
 
-const generatePollinationsUrl = (prompt: string | undefined | null): string => {
-  const safePrompt = prompt ?? 'animation scene';
-  const encodedPrompt = encodeURIComponent(safePrompt);
-  return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&nologo=true`;
-};
-
 // ============ Validation Helpers ============
 
 const isValidProject = (data: unknown): data is Project => {
@@ -293,93 +287,132 @@ export default function FortoriumApp() {
 
   // ============ Image Generation Functions ============
 
-  const generateSceneImage = useCallback((sceneIndex: number) => {
+  const generateSceneImage = useCallback(async (sceneIndex: number) => {
     const scene = project?.script?.scenes?.[sceneIndex];
     if (!scene) return;
 
     const imageKey = `scene-${sceneIndex}`;
     setGeneratingImages(prev => new Set(prev).add(imageKey));
 
-    const styleLabel = getStyleLabel(project?.style);
-    const prompt = `Animation style scene: ${scene?.description ?? ''}, ${styleLabel} style, cinematic, beautiful, high quality`;
-
-    const imageUrl = generatePollinationsUrl(prompt);
-
-    // Simulate loading time for image generation
-    setTimeout(() => {
-      setProject(prev => {
-        const newScenes = [...(prev?.script?.scenes ?? [])];
-        if (newScenes[sceneIndex]) {
-          newScenes[sceneIndex] = {
-            ...newScenes[sceneIndex],
-            generatedImage: imageUrl
-          };
-        }
-        return {
-          ...prev,
-          script: {
-            ...(prev?.script ?? { title: '', logline: '', totalDuration: 0, characters: [], scenes: [] }),
-            scenes: newScenes
-          },
-          updatedAt: new Date().toISOString()
-        };
+    try {
+      // Create detailed prompt for AI
+      const styleLabel = getStyleLabel(project?.style);
+      const prompt = `${scene?.description ?? ''}, ${scene?.location ?? ''}, ${styleLabel} animation style, cinematic scene`;
+      
+      // Call our API to generate image
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, type: 'scene' })
       });
 
+      const data = await response.json();
+
+      if (data.success && data.image) {
+        setProject(prev => {
+          if (!prev?.script?.scenes) return prev;
+          const newScenes = [...prev.script.scenes];
+          if (newScenes[sceneIndex]) {
+            newScenes[sceneIndex] = {
+              ...newScenes[sceneIndex],
+              generatedImage: data.image
+            };
+          }
+          return {
+            ...prev,
+            script: {
+              ...prev.script,
+              scenes: newScenes
+            },
+            updatedAt: new Date().toISOString()
+          };
+        });
+
+        toast({
+          title: "Изображение создано!",
+          description: `Изображение для сцены "${scene?.title ?? ''}" готово`,
+        });
+      } else {
+        throw new Error(data.error ?? 'Failed to generate');
+      }
+    } catch (error: any) {
+      console.error('Image generation error:', error);
+      toast({
+        title: "Ошибка генерации",
+        description: error?.message ?? "Не удалось создать изображение",
+        variant: "destructive"
+      });
+    } finally {
       setGeneratingImages(prev => {
         const newSet = new Set(prev);
         newSet.delete(imageKey);
         return newSet;
       });
-
-      toast({
-        title: "Изображение создано!",
-        description: `Изображение для сцены "${scene?.title ?? ''}" готово`,
-      });
-    }, 1500);
+    }
   }, [project, toast]);
 
-  const generateCharacterImage = useCallback((characterIndex: number) => {
+  const generateCharacterImage = useCallback(async (characterIndex: number) => {
     const character = project?.script?.characters?.[characterIndex];
     if (!character) return;
 
     const imageKey = `character-${characterIndex}`;
     setGeneratingImages(prev => new Set(prev).add(imageKey));
 
-    const styleLabel = getStyleLabel(project?.style);
-    const prompt = `Character portrait: ${character?.description ?? ''}, ${styleLabel} animation style, portrait, expressive, detailed`;
-
-    const imageUrl = generatePollinationsUrl(prompt);
-
-    setTimeout(() => {
-      setProject(prev => {
-        const newCharacters = [...(prev?.script?.characters ?? [])];
-        if (newCharacters[characterIndex]) {
-          newCharacters[characterIndex] = {
-            ...newCharacters[characterIndex],
-            generatedImage: imageUrl
-          };
-        }
-        return {
-          ...prev,
-          script: {
-            ...(prev?.script ?? { title: '', logline: '', totalDuration: 0, characters: [], scenes: [] }),
-            characters: newCharacters
-          },
-          updatedAt: new Date().toISOString()
-        };
+    try {
+      // Create detailed prompt for AI
+      const styleLabel = getStyleLabel(project?.style);
+      const prompt = `${character?.description ?? ''}, ${character?.name ?? 'character'} portrait, ${styleLabel} animation style, character design`;
+      
+      // Call our API to generate image
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, type: 'character' })
       });
 
+      const data = await response.json();
+
+      if (data.success && data.image) {
+        setProject(prev => {
+          if (!prev?.script?.characters) return prev;
+          const newCharacters = [...prev.script.characters];
+          if (newCharacters[characterIndex]) {
+            newCharacters[characterIndex] = {
+              ...newCharacters[characterIndex],
+              generatedImage: data.image
+            };
+          }
+          return {
+            ...prev,
+            script: {
+              ...prev.script,
+              characters: newCharacters
+            },
+            updatedAt: new Date().toISOString()
+          };
+        });
+
+        toast({
+          title: "Портрет создан!",
+          description: `Портрет персонажа "${character?.name ?? ''}" готов`,
+        });
+      } else {
+        throw new Error(data.error ?? 'Failed to generate');
+      }
+    } catch (error: any) {
+      console.error('Image generation error:', error);
+      toast({
+        title: "Ошибка генерации",
+        description: error?.message ?? "Не удалось создать изображение",
+        variant: "destructive"
+      });
+    } finally {
       setGeneratingImages(prev => {
         const newSet = new Set(prev);
         newSet.delete(imageKey);
         return newSet;
       });
-
-      toast({
-        title: "Портрет создан!",
-        description: `Портрет персонажа "${character?.name ?? ''}" готов`,
-      });
-    }, 1500);
+    }
   }, [project, toast]);
 
   const generateAllSceneImages = useCallback(() => {
@@ -848,12 +881,31 @@ export default function FortoriumApp() {
                     <CardContent>
                       <ScrollArea className="h-[500px] pr-4">
                         <div className="space-y-4">
-                          {(project.script?.scenes ?? []).map((scene, index) => (
+                          {(project.script?.scenes ?? []).map((scene, index) => {
+                            const imageKey = `scene-${index}`;
+                            const isGenerating = generatingImages.has(imageKey);
+                            
+                            return (
                             <Card key={`scene-${index}`} className="bg-gray-900/50 border-purple-500/10">
                               <CardContent className="pt-4">
                                 <div className="flex items-start gap-4">
-                                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                                    {scene?.number ?? index + 1}
+                                  {/* Scene Image Preview */}
+                                  <div className="flex-shrink-0 w-24 h-24 rounded-lg bg-gray-800 relative overflow-hidden">
+                                    {scene?.generatedImage ? (
+                                      <img
+                                        src={scene.generatedImage}
+                                        alt={scene?.title ?? 'Сцена'}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : isGenerating ? (
+                                      <div className="w-full h-full flex items-center justify-center">
+                                        <RefreshCw className="w-6 h-6 text-purple-400 animate-spin" />
+                                      </div>
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-gray-600">
+                                        <ImageIcon className="w-8 h-8" />
+                                      </div>
+                                    )}
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
@@ -884,11 +936,26 @@ export default function FortoriumApp() {
                                         ))}
                                       </div>
                                     )}
+                                    
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="mt-2 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+                                      onClick={() => generateSceneImage(index)}
+                                      disabled={isGenerating}
+                                    >
+                                      {isGenerating ? (
+                                        <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                                      ) : (
+                                        <ImageIcon className="w-3 h-3 mr-1" />
+                                      )}
+                                      {scene?.generatedImage ? 'Пересоздать' : 'Создать изображение'}
+                                    </Button>
                                   </div>
                                 </div>
                               </CardContent>
                             </Card>
-                          ))}
+                          );})}
                         </div>
                       </ScrollArea>
                     </CardContent>

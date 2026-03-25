@@ -188,3 +188,37 @@ Next.js dev server is running in background (PID: 700).
 Use 'kill 700' to stop it.
 ✓ Compiled in 177ms
 ✓ Compiled in 144ms
+ GET / 200 in 326ms (compile: 182ms, render: 144ms)
+ GET / 200 in 67ms (compile: 3ms, render: 63ms)
+✓ Compiled in 178ms
+✓ Compiled in 153ms
+ GET / 200 in 81ms (compile: 43ms, render: 38ms)
+✓ Compiled in 186ms
+ GET / 200 in 159ms (compile: 48ms, render: 110ms)
+✓ Compiled in 180ms
+✓ Compiled in 248ms
+✓ Compiled in 129ms
+ GET / 200 in 57ms (compile: 34ms, render: 23ms)
+ GET / 200 in 133ms (compile: 3ms, render: 129ms)
+ GET / 200 in 194ms (compile: 78ms, render: 116ms)
+Failed to make image generation request: Error: API request failed with status 401: {"error":"missing X-Token header"}
+    at async POST (src/app/api/generate-image/route.ts:25:22)
+  23 |
+  24 |     // Generate image using ZAI SDK
+> 25 |     const response = await zai.images.generations.create({
+     |                      ^
+  26 |       prompt: enhancedPrompt,
+  27 |       size: '1024x1024'
+  28 |     });
+Image generation error: Error: API request failed with status 401: {"error":"missing X-Token header"}
+    at async POST (src/app/api/generate-image/route.ts:25:22)
+  23 |
+  24 |     // Generate image using ZAI SDK
+> 25 |     const response = await zai.images.generations.create({
+     |                      ^
+  26 |       prompt: enhancedPrompt,
+  27 |       size: '1024x1024'
+  28 |     });
+ POST /api/generate-image 500 in 677ms (compile: 359ms, render: 318ms)
+error: script "dev" was terminated by signal SIGTERM (Polite quit request)
+[?25h
