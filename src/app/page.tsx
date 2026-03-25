@@ -300,7 +300,7 @@ export default function FortoriumApp() {
       const prompt = `${scene?.description ?? ''}, ${scene?.location ?? ''}, ${styleLabel} animation style, cinematic scene`;
       
       // Call our API to generate image
-      const response = await fetch('/api/generate-image', {
+      const response = await fetch('/api/img', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, type: 'scene' })
@@ -364,7 +364,7 @@ export default function FortoriumApp() {
       const prompt = `${character?.description ?? ''}, ${character?.name ?? 'character'} portrait, ${styleLabel} animation style, character design`;
       
       // Call our API to generate image
-      const response = await fetch('/api/generate-image', {
+      const response = await fetch('/api/img', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, type: 'character' })
