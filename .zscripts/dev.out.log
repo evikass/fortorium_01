@@ -5438,3 +5438,165 @@ Director error: TypeError: Cannot read properties of undefined (reading 'findMan
   114 |     
   115 |     // Получаем кандидатов на утверждение
  GET /api/director 500 in 54ms (compile: 2ms, render: 52ms)
+✓ Compiled in 263ms
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 52ms (compile: 3ms, render: 49ms)
+Error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/candidates/route.ts:73:43)
+  71 |   try {
+  72 |     // Проверяем pending кандидатов
+> 73 |     let pending = await db.agentCandidate.findMany({
+     |                                           ^
+  74 |       where: { status: 'pending' },
+  75 |       orderBy: { createdAt: 'desc' },
+  76 |       take: 10
+ GET /api/candidates 500 in 43ms (compile: 1567µs, render: 42ms)
+Director error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/director/route.ts:112:45)
+  110 |   try {
+  111 |     // Получаем данные студии
+> 112 |     const hiredAgents = await db.hiredAgent.findMany();
+      |                                             ^
+  113 |     const projects = await db.animationProject.findMany();
+  114 |     
+  115 |     // Получаем кандидатов на утверждение
+ GET /api/director 500 in 102ms (compile: 50ms, render: 52ms)
+ GET /api/work 500 in 5ms (compile: 1298µs, render: 3ms)
+✓ Compiled in 220ms
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 49ms (compile: 1681µs, render: 47ms)
+Director error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/director/route.ts:112:45)
+  110 |   try {
+  111 |     // Получаем данные студии
+> 112 |     const hiredAgents = await db.hiredAgent.findMany();
+      |                                             ^
+  113 |     const projects = await db.animationProject.findMany();
+  114 |     
+  115 |     // Получаем кандидатов на утверждение
+ GET /api/director 500 in 59ms (compile: 1052µs, render: 58ms)
+ GET /api/work 500 in 5ms (compile: 1826µs, render: 3ms)
+Error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/candidates/route.ts:73:43)
+  71 |   try {
+  72 |     // Проверяем pending кандидатов
+> 73 |     let pending = await db.agentCandidate.findMany({
+     |                                           ^
+  74 |       where: { status: 'pending' },
+  75 |       orderBy: { createdAt: 'desc' },
+  76 |       take: 10
+ GET /api/candidates 500 in 58ms (compile: 11ms, render: 47ms)
+ GET / 200 in 240ms (compile: 80ms, render: 160ms)
+ GET / 200 in 61ms (compile: 1828µs, render: 59ms)
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 63ms (compile: 2ms, render: 60ms)
+Director error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/director/route.ts:112:45)
+  110 |   try {
+  111 |     // Получаем данные студии
+> 112 |     const hiredAgents = await db.hiredAgent.findMany();
+      |                                             ^
+  113 |     const projects = await db.animationProject.findMany();
+  114 |     
+  115 |     // Получаем кандидатов на утверждение
+ GET /api/director 500 in 79ms (compile: 3ms, render: 77ms)
+Error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/candidates/route.ts:73:43)
+  71 |   try {
+  72 |     // Проверяем pending кандидатов
+> 73 |     let pending = await db.agentCandidate.findMany({
+     |                                           ^
+  74 |       where: { status: 'pending' },
+  75 |       orderBy: { createdAt: 'desc' },
+  76 |       take: 10
+ GET /api/candidates 500 in 46ms (compile: 1761µs, render: 44ms)
+ GET /api/work 500 in 49ms (compile: 46ms, render: 3ms)
+ GET / 200 in 53ms (compile: 1715µs, render: 51ms)
+ GET / 200 in 58ms (compile: 2ms, render: 56ms)
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 75ms (compile: 2ms, render: 73ms)
+ GET /api/work 500 in 5ms (compile: 1709µs, render: 3ms)
+Director error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/director/route.ts:112:45)
+  110 |   try {
+  111 |     // Получаем данные студии
+> 112 |     const hiredAgents = await db.hiredAgent.findMany();
+      |                                             ^
+  113 |     const projects = await db.animationProject.findMany();
+  114 |     
+  115 |     // Получаем кандидатов на утверждение
+ GET /api/director 500 in 61ms (compile: 1896µs, render: 59ms)
+Error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/candidates/route.ts:73:43)
+  71 |   try {
+  72 |     // Проверяем pending кандидатов
+> 73 |     let pending = await db.agentCandidate.findMany({
+     |                                           ^
+  74 |       where: { status: 'pending' },
+  75 |       orderBy: { createdAt: 'desc' },
+  76 |       take: 10
+ GET /api/candidates 500 in 103ms (compile: 62ms, render: 41ms)
+✓ Compiled in 288ms
+ GET /api/work 500 in 6ms (compile: 1887µs, render: 4ms)
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 46ms (compile: 1333µs, render: 45ms)
+Director error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/director/route.ts:112:45)
+  110 |   try {
+  111 |     // Получаем данные студии
+> 112 |     const hiredAgents = await db.hiredAgent.findMany();
+      |                                             ^
+  113 |     const projects = await db.animationProject.findMany();
+  114 |     
+  115 |     // Получаем кандидатов на утверждение
+ GET /api/director 500 in 45ms (compile: 1001µs, render: 44ms)
+Error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/candidates/route.ts:73:43)
+  71 |   try {
+  72 |     // Проверяем pending кандидатов
+> 73 |     let pending = await db.agentCandidate.findMany({
+     |                                           ^
+  74 |       where: { status: 'pending' },
+  75 |       orderBy: { createdAt: 'desc' },
+  76 |       take: 10
+ GET /api/candidates 500 in 63ms (compile: 1578µs, render: 61ms)
