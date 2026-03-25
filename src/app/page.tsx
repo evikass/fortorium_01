@@ -1396,7 +1396,7 @@ export default function AnimationStudio() {
     setIsLoading(true);
     
     for (const index of selectedScenes) {
-      setWorkProgress(`🎨 ${language === 'ru' ? 'Генерация' : 'Generating'} ${index + 1}/${script.scenes.length}...`);
+      setWorkProgress(`🎨 ${language === 'ru' ? 'Генерация' : 'Generating'} ${index + 1}/${script.scenes?.length || 0}...`);
       await generateSceneImage(index);
     }
     
@@ -1975,7 +1975,7 @@ export default function AnimationStudio() {
 
   const nextPresentationScene = () => {
     if (!script?.scenes) return;
-    if (selectedSceneIndex < script.scenes.length - 1) {
+    if (selectedSceneIndex < (script.scenes?.length || 0) - 1) {
       setSelectedSceneIndex(prev => prev + 1);
     }
   };
@@ -2751,8 +2751,8 @@ export default function AnimationStudio() {
     
     const newImages: Record<number, any> = {};
     
-    for (let i = 0; i < script.scenes.length; i++) {
-      setWorkProgress(`🎨 Генерация изображения ${i + 1}/${script.scenes.length}...`);
+    for (let i = 0; i < (script.scenes?.length || 0); i++) {
+      setWorkProgress(`🎨 Генерация изображения ${i + 1}/${script.scenes?.length || 0}...`);
       
       const scene = script.scenes[i];
       
@@ -2850,9 +2850,9 @@ export default function AnimationStudio() {
     setIsLoading(true);
     setWorkProgress('🎨 Генерация персонажей...');
     
-    for (let i = 0; i < script.characters.length; i++) {
+    for (let i = 0; i < (script.characters?.length || 0); i++) {
       const char = script.characters[i];
-      setWorkProgress(`🎨 Генерация персонажа ${i + 1}/${script.characters.length}: ${char.name}`);
+      setWorkProgress(`🎨 Генерация персонажа ${i + 1}/${script.characters?.length || 0}: ${char.name}`);
       await generateCharacterImage(char.name, char.description);
     }
     
@@ -4303,10 +4303,10 @@ export default function AnimationStudio() {
                       <p className="text-white/80 text-sm mb-3">{script.logline}</p>
                       
                       {/* Characters with Images */}
-                      {script.characters?.length > 0 && (
+                      {script?.characters?.length > 0 && (
                         <div className="mb-4">
                           <div className="flex items-center justify-between mb-2">
-                            <h5 className="text-white/60 text-xs">Персонажи ({script.characters.length}):</h5>
+                            <h5 className="text-white/60 text-xs">Персонажи ({script.characters?.length || 0}):</h5>
                             <div className="flex items-center gap-2">
                               <Button
                                 size="sm"
@@ -7198,7 +7198,7 @@ export default function AnimationStudio() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-              v3.1.7
+              v3.1.8
           </span>
           </div>
         </div>
@@ -7207,7 +7207,7 @@ export default function AnimationStudio() {
       {/* Version Badge - Fixed Bottom Right */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="bg-gradient-to-r from-purple-600/90 to-pink-600/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-          <span className="text-white text-xs font-medium">ФОРТОРИУМ v3.1.7</span>
+          <span className="text-white text-xs font-medium">ФОРТОРИУМ v3.1.8</span>
         </div>
       </div>
     </div>
