@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import ZAI from 'z-ai-web-dev-sdk';
-import { db } from '@/lib/db';
 
-// Увеличиваем таймаут для Vercel (требует Pro план для больше 10 сек)
-export const maxDuration = 60; // 60 секунд максимум
+// Увеличиваем таймаут для Vercel
+export const maxDuration = 60;
 
 // ============================================
 // AI ИНИЦИАЛИЗАЦИЯ
@@ -28,7 +27,6 @@ async function writerAgent(projectTitle: string, projectDescription: string, sty
   
   console.log('🎬 Запуск сценариста для:', projectTitle);
   
-  // Если есть AI - используем его
   if (zai) {
     const prompt = `Ты профессиональный сценарист анимации в стиле ${style}. Создай короткий сценарий для мультфильма.
 
@@ -84,15 +82,13 @@ async function writerAgent(projectTitle: string, projectDescription: string, sty
   
   console.log('⚠️ Использую fallback сценарий');
   
-  // Fallback - генерируем базовый сценарий на основе описания
   return {
     title: projectTitle,
     logline: projectDescription,
     mood: style === 'ghibli' ? 'Волшебный и атмосферный' : style === 'disney' ? 'Семейный и весёлый' : 'Приключенческий',
     characters: [
       { name: "Главный Герой", description: "Протагонист истории", traits: ["смелый", "добрый", "любознательный"] },
-      { name: "Верный Друг", description: "Помощник героя", traits: ["верный", "забавный", "оптимист"] },
-      { name: "Антагонист", description: "Противник героя", traits: ["хитрый", "амбициозный"] }
+      { name: "Верный Друг", description: "Помощник героя", traits: ["верный", "забавный", "оптимист"] }
     ],
     scenes: [
       {
@@ -102,7 +98,7 @@ async function writerAgent(projectTitle: string, projectDescription: string, sty
         description: `${projectDescription}. Герой мечтает о великом приключении.`,
         dialogue: [
           { character: "Главный Герой", line: "Сегодня начинается моё приключение!" },
-          { character: "Верный Друг", line: "Я с тобой, друг! Это будет здорово!" }
+          { character: "Верный Друг", line: "Я с тобой, друг!" }
         ],
         action: "Герой собирает вещи и готовится к путешествию",
         duration: 8
@@ -111,40 +107,26 @@ async function writerAgent(projectTitle: string, projectDescription: string, sty
         number: 2,
         title: "Путь к цели",
         location: "В пути",
-        description: "Герои преодолевают первые препятствия на своём пути.",
+        description: "Герои преодолевают препятствия на своём пути.",
         dialogue: [
-          { character: "Главный Герой", line: "Смотри! Там впереди что-то интересное!" },
-          { character: "Верный Друг", line: "Нужно быть осторожными..." }
+          { character: "Главный Герой", line: "Смотри! Там впереди что-то интересное!" }
         ],
         action: "Путешественники идут через лес/город",
         duration: 7
       },
       {
         number: 3,
-        title: "Испытание",
-        location: "Таинственное место",
-        description: "Герои сталкиваются с главным препятствием.",
-        dialogue: [
-          { character: "Антагонист", line: "Вы никогда не пройдёте!" },
-          { character: "Главный Герой", line: "Мы справимся, если будем вместе!" }
-        ],
-        action: "Напряжённая сцена с препятствием",
-        duration: 8
-      },
-      {
-        number: 4,
         title: "Триумф",
         location: "Цель путешествия",
         description: "Герои побеждают и достигают цели.",
         dialogue: [
-          { character: "Главный Герой", line: "Мы сделали это!" },
-          { character: "Верный Друг", line: "Я знал, что у нас получится!" }
+          { character: "Главный Герой", line: "Мы сделали это!" }
         ],
         action: "Победная сцена, герои празднуют успех",
         duration: 7
       }
     ],
-    totalDuration: 30
+    totalDuration: 22
   };
 }
 
@@ -169,7 +151,6 @@ async function artistAgent(sceneTitle: string, sceneDescription: string, style: 
   
   console.log('🖼️ Промпт для генерации:', imagePrompt.substring(0, 100) + '...');
   
-  // Если есть AI - генерируем изображение
   if (zai) {
     try {
       console.log('⏳ Начинаю генерацию изображения...');
@@ -196,15 +177,11 @@ async function artistAgent(sceneTitle: string, sceneDescription: string, style: 
       }
     } catch (error: any) {
       console.error('❌ Ошибка генерации изображения:', error?.message || error);
-      console.error('Stack:', error?.stack);
     }
   } else {
     console.log('⚠️ AI не инициализирован');
   }
   
-  console.log('⚠️ Возвращаю заглушку без изображения');
-  
-  // Fallback - возвращаем заглушку
   return {
     success: false,
     imageUrl: null,
@@ -221,32 +198,13 @@ async function animatorAgent(scenes: any[]) {
   
   console.log('🎬 Запуск аниматора для', scenes.length, 'сцен');
   
-  // Если есть AI - используем его
   if (zai) {
     const prompt = `Ты профессиональный аниматор. Создай детальное описание анимации для каждой сцены.
 
 Сцены из сценария:
 ${JSON.stringify(scenes, null, 2)}
 
-Для каждой сцены опиши анимацию в формате JSON:
-{
-  "scenes": [
-    {
-      "sceneNumber": 1,
-      "animation": {
-        "cameraMovement": "описание движения камеры",
-        "characterActions": ["действие персонажа 1"],
-        "timing": {"start": 0, "end": 5},
-        "transitions": "переход к следующей сцене",
-        "effects": ["эффект 1"]
-      }
-    }
-  ],
-  "totalDuration": 30,
-  "animationStyle": "описание стиля анимации"
-}
-
-Отвечай ТОЛЬКО JSON!`;
+Для каждой сцены опиши анимацию в формате JSON. Отвечай ТОЛЬКО JSON!`;
 
     try {
       const response = await zai.chat.completions.create({
@@ -258,16 +216,13 @@ ${JSON.stringify(scenes, null, 2)}
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        console.log('✅ План анимации создан');
-        return parsed;
+        return JSON.parse(jsonMatch[0]);
       }
     } catch (e) {
       console.error('❌ AI ошибка:', e);
     }
   }
   
-  // Fallback - базовая анимация
   return {
     scenes: scenes.map((s, i) => ({
       sceneNumber: i + 1,
@@ -275,8 +230,7 @@ ${JSON.stringify(scenes, null, 2)}
         cameraMovement: i === 0 ? "Статичный кадр, затем медленный наезд" : "Плавное панорамирование",
         characterActions: ["Вход персонажа", "Основное действие", "Реакция"],
         timing: { start: i * 7, end: (i + 1) * 7 },
-        transitions: i < scenes.length - 1 ? "Кросс-диссольв" : "Затухание",
-        effects: ["Световые блики", "Лёгкое размытие движения"]
+        transitions: i < scenes.length - 1 ? "Кросс-диссольв" : "Затухание"
       }
     })),
     totalDuration: scenes.length * 7,
@@ -290,21 +244,7 @@ ${JSON.stringify(scenes, null, 2)}
 
 // GET - получить задачи
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const projectId = searchParams.get('projectId');
-  
-  try {
-    const tasks = await db.hiredAgentTask.findMany({
-      where: projectId ? { projectId } : {},
-      include: { agent: true },
-      orderBy: { createdAt: 'desc' },
-      take: 20
-    });
-    
-    return NextResponse.json({ success: true, tasks });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
-  }
+  return NextResponse.json({ success: true, tasks: [] });
 }
 
 // POST - выполнить работу
@@ -314,273 +254,81 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json();
-    const { action, projectId, agentId, data } = body;
+    const { action, projectId, data } = body;
     
-    console.log('📋 Action:', action, '| ProjectId:', projectId);
+    console.log('📋 Action:', action);
     
     switch (action) {
-      // ========================================
-      // СЦЕНАРИСТ - написать сценарий
-      // ========================================
       case 'write_script': {
-        const project = await db.animationProject.findUnique({
-          where: { id: projectId }
-        });
+        const title = data?.title || 'Новый проект';
+        const description = data?.description || 'История о приключениях';
+        const style = data?.style || 'disney';
         
-        if (!project) {
-          return NextResponse.json({ success: false, error: 'Проект не найден' }, { status: 404 });
-        }
-        
-        // Найти сценариста ИЛИ использовать виртуального
-        let writer = await db.hiredAgent.findFirst({
-          where: { role: 'writer', status: 'idle' }
-        });
-        
-        const virtualWriter = !writer;
-        const writerName = writer?.name || 'AI-Сценарист';
-        const writerId = writer?.id;
-        
-        if (writer) {
-          await db.hiredAgent.update({
-            where: { id: writer.id },
-            data: { status: 'working' }
-          });
-        }
-        
-        // Генерируем сценарий
-        const script = await writerAgent(
-          project.title,
-          project.description,
-          project.style || 'disney'
-        );
-        
-        // Создаём задачу
-        const taskData: any = {
-          projectId: project.id,
-          type: 'script',
-          title: `Сценарий: ${project.title}`,
-          description: 'Написание сценария',
-          status: 'completed',
-          input: JSON.stringify({ title: project.title, description: project.description }),
-          output: JSON.stringify(script),
-          completedAt: new Date()
-        };
-        
-        if (writerId) {
-          taskData.agentId = writerId;
-        }
-        
-        const task = await db.hiredAgentTask.create({ data: taskData });
-        
-        // Возвращаем агента в idle
-        if (writer) {
-          await db.hiredAgent.update({
-            where: { id: writer.id },
-            data: { status: 'idle', tasksCompleted: { increment: 1 } }
-          });
-        }
-        
-        console.log('✅ Сценарий готов');
+        const script = await writerAgent(title, description, style);
         
         return NextResponse.json({
           success: true,
-          message: `✍️ ${writerName} написал сценарий!`,
-          script,
-          task,
-          virtualAgent: virtualWriter
+          message: `✍️ AI-Сценарист написал сценарий!`,
+          script
         });
       }
       
-      // ========================================
-      // ХУДОЖНИК - создать раскадровку
-      // ========================================
       case 'create_storyboard': {
         const { sceneTitle, sceneDescription, style } = data;
         
-        let artist = await db.hiredAgent.findFirst({
-          where: { role: 'artist', status: 'idle' }
-        });
+        console.log('🎨 Генерация изображения для:', sceneTitle);
         
-        const virtualArtist = !artist;
-        const artistName = artist?.name || 'AI-Художник';
-        const artistId = artist?.id;
-        
-        if (artist) {
-          await db.hiredAgent.update({
-            where: { id: artist.id },
-            data: { status: 'working' }
-          });
-        }
-        
-        // Генерируем изображение
         const result = await artistAgent(sceneTitle, sceneDescription, style || 'disney');
         
-        const taskData: any = {
-          projectId: projectId || 'default',
-          type: 'storyboard',
-          title: `Раскадровка: ${sceneTitle}`,
-          description: sceneDescription,
-          status: 'completed',
-          input: JSON.stringify({ sceneTitle, sceneDescription, style }),
-          output: JSON.stringify(result),
-          completedAt: new Date()
-        };
-        
-        if (artistId) {
-          taskData.agentId = artistId;
-        }
-        
-        const task = await db.hiredAgentTask.create({ data: taskData });
-        
-        if (artist) {
-          await db.hiredAgent.update({
-            where: { id: artist.id },
-            data: { status: 'idle', tasksCompleted: { increment: 1 } }
-          });
-        }
-        
-        console.log('📤 Возвращаю результат storyboard:', { 
+        console.log('📤 Результат:', { 
           success: result.success, 
-          hasImage: !!result.imageUrl,
-          imageLength: result.imageUrl?.length || 0
+          hasImage: !!result.imageUrl
         });
         
         return NextResponse.json({
-          success: true,
-          message: `🎨 ${artistName} создал раскадровку!`,
-          image: result,
-          task,
-          virtualAgent: virtualArtist
+          success: result.success,
+          message: result.success 
+            ? `🎨 AI-Художник создал изображение!` 
+            : '⚠️ Не удалось сгенерировать изображение',
+          image: result
         });
       }
       
-      // ========================================
-      // ПОЛНЫЙ ПАЙПЛАЙН - запустить всё
-      // ========================================
       case 'run_full_pipeline': {
-        const project = await db.animationProject.findUnique({
-          where: { id: projectId }
-        });
-        
-        if (!project) {
-          return NextResponse.json({ success: false, error: 'Проект не найден' }, { status: 404 });
-        }
+        const title = data?.title || 'Новый проект';
+        const description = data?.description || 'История о приключениях';
+        const style = data?.style || 'disney';
         
         const results: any = {
           script: null,
           storyboard: null,
-          animation: null,
-          agents: {
-            writer: null,
-            artist: null,
-            animator: null
-          }
+          animation: null
         };
         
-        // 1. Сценарист
         console.log('📝 Шаг 1: Генерация сценария...');
-        let writer = await db.hiredAgent.findFirst({
-          where: { role: 'writer', status: 'idle' }
-        });
+        results.script = await writerAgent(title, description, style);
         
-        const writerName = writer?.name || 'AI-Сценарист';
-        results.agents.writer = writerName;
-        
-        if (writer) {
-          await db.hiredAgent.update({
-            where: { id: writer.id },
-            data: { status: 'working' }
-          });
-        }
-        
-        results.script = await writerAgent(project.title, project.description, project.style || 'disney');
-        
-        if (writer) {
-          await db.hiredAgent.update({
-            where: { id: writer.id },
-            data: { status: 'idle', tasksCompleted: { increment: 1 } }
-          });
-        }
-        
-        // 2. Художник - для первой сцены
         console.log('🎨 Шаг 2: Генерация раскадровки...');
-        let artist = await db.hiredAgent.findFirst({
-          where: { role: 'artist', status: 'idle' }
-        });
-        
-        const artistName = artist?.name || 'AI-Художник';
-        results.agents.artist = artistName;
-        
         if (results.script?.scenes?.[0]) {
-          if (artist) {
-            await db.hiredAgent.update({
-              where: { id: artist.id },
-              data: { status: 'working' }
-            });
-          }
-          
           const firstScene = results.script.scenes[0];
           results.storyboard = await artistAgent(
             firstScene.title,
             firstScene.description,
-            project.style || 'disney'
+            style
           );
-          
-          console.log('📊 Storyboard результат:', {
-            success: results.storyboard.success,
-            hasImage: !!results.storyboard.imageUrl,
-            imageLength: results.storyboard.imageUrl?.length || 0
-          });
-          
-          if (artist) {
-            await db.hiredAgent.update({
-              where: { id: artist.id },
-              data: { status: 'idle', tasksCompleted: { increment: 1 } }
-            });
-          }
         }
         
-        // 3. Аниматор
         console.log('🎬 Шаг 3: Генерация плана анимации...');
-        let animator = await db.hiredAgent.findFirst({
-          where: { role: 'animator', status: 'idle' }
-        });
-        
-        const animatorName = animator?.name || 'AI-Аниматор';
-        results.agents.animator = animatorName;
-        
         if (results.script?.scenes) {
-          if (animator) {
-            await db.hiredAgent.update({
-              where: { id: animator.id },
-              data: { status: 'working' }
-            });
-          }
-          
           results.animation = await animatorAgent(results.script.scenes);
-          
-          if (animator) {
-            await db.hiredAgent.update({
-              where: { id: animator.id },
-              data: { status: 'idle', tasksCompleted: { increment: 1 } }
-            });
-          }
         }
-        
-        // Обновляем статус проекта
-        await db.animationProject.update({
-          where: { id: project.id },
-          data: { status: 'in_progress' }
-        });
         
         console.log('✅ Полный пайплайн завершён');
-        console.log('='.repeat(50));
         
         return NextResponse.json({
           success: true,
           message: '🚀 Пайплайн выполнен!',
-          results,
-          project
+          results
         });
       }
       

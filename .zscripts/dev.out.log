@@ -5600,3 +5600,30 @@ Error: TypeError: Cannot read properties of undefined (reading 'findMany')
   75 |       orderBy: { createdAt: 'desc' },
   76 |       take: 10
  GET /api/candidates 500 in 63ms (compile: 1578µs, render: 61ms)
+==================================================
+📥 Новый запрос к API work
+📋 Action: create_storyboard | ProjectId: test
+❌ Критическая ошибка: TypeError: Cannot read properties of undefined (reading 'findFirst')
+    at POST (src/app/api/work/route.ts:400:42)
+  398 |         const { sceneTitle, sceneDescription, style } = data;
+  399 |         
+> 400 |         let artist = await db.hiredAgent.findFirst({
+      |                                          ^
+  401 |           where: { role: 'artist', status: 'idle' }
+  402 |         });
+  403 |         
+ POST /api/work 500 in 88ms (compile: 2ms, render: 86ms)
+==================================================
+📥 Новый запрос к API work
+📋 Action: create_storyboard
+🎨 Генерация изображения для: Test Scene
+🔄 Инициализация AI SDK...
+✅ AI SDK инициализирован успешно
+🎨 Запуск художника для: Test Scene
+🖼️ Промпт для генерации: Studio Ghibli style, Miyazaki, watercolor, magical, soft colors, anime, dreamy atmosphere, A cute ca...
+⏳ Начинаю генерацию изображения...
+✅ Изображение создано за 8654ms
+📊 Размер base64: 194752
+📤 Результат: { success: true, hasImage: true }
+ POST /api/work 200 in 8.8s (compile: 97ms, render: 8.7s)
+ GET /api/work 200 in 6ms (compile: 2ms, render: 4ms)
