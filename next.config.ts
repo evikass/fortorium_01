@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  // Force fresh builds
+  generateBuildId: async () => {
+    return `build-${Date.now()}`;
+  },
 };
 
 export default nextConfig;
