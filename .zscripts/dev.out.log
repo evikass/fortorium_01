@@ -5659,3 +5659,65 @@ Error: TypeError: Cannot read properties of undefined (reading 'findMany')
   75 |       orderBy: { createdAt: 'desc' },
   76 |       take: 10
  GET /api/candidates 500 in 81ms (compile: 1480µs, render: 79ms)
+✓ Compiled in 248ms
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 53ms (compile: 1683µs, render: 51ms)
+Error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/candidates/route.ts:73:43)
+  71 |   try {
+  72 |     // Проверяем pending кандидатов
+> 73 |     let pending = await db.agentCandidate.findMany({
+     |                                           ^
+  74 |       where: { status: 'pending' },
+  75 |       orderBy: { createdAt: 'desc' },
+  76 |       take: 10
+ GET /api/candidates 500 in 67ms (compile: 3ms, render: 64ms)
+Director error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/director/route.ts:112:45)
+  110 |   try {
+  111 |     // Получаем данные студии
+> 112 |     const hiredAgents = await db.hiredAgent.findMany();
+      |                                             ^
+  113 |     const projects = await db.animationProject.findMany();
+  114 |     
+  115 |     // Получаем кандидатов на утверждение
+ GET /api/director 500 in 135ms (compile: 75ms, render: 60ms)
+ GET /api/work 200 in 90ms (compile: 87ms, render: 3ms)
+ GET / 200 in 70ms (compile: 47ms, render: 23ms)
+ GET / 200 in 12ms (compile: 1745µs, render: 10ms)
+ GET / 200 in 14ms (compile: 3ms, render: 12ms)
+ GET / 200 in 11ms (compile: 1483µs, render: 10ms)
+ GET / 200 in 15ms (compile: 1564µs, render: 13ms)
+ GET / 200 in 18ms (compile: 2ms, render: 15ms)
+ GET / 200 in 17ms (compile: 2ms, render: 14ms)
+ GET / 200 in 18ms (compile: 2ms, render: 16ms)
+ GET / 200 in 17ms (compile: 2ms, render: 15ms)
+ GET / 200 in 22ms (compile: 4ms, render: 18ms)
+ GET / 200 in 13ms (compile: 1869µs, render: 11ms)
+ GET / 200 in 12ms (compile: 1446µs, render: 10ms)
+ GET / 200 in 14ms (compile: 1763µs, render: 12ms)
+ GET / 200 in 14ms (compile: 1802µs, render: 12ms)
+ GET / 200 in 27ms (compile: 1787µs, render: 25ms)
+ GET / 200 in 13ms (compile: 1898µs, render: 11ms)
+ GET / 200 in 11ms (compile: 1641µs, render: 9ms)
+ GET / 200 in 12ms (compile: 1877µs, render: 10ms)
+ GET / 200 in 11ms (compile: 1647µs, render: 10ms)
+ GET / 200 in 11ms (compile: 1643µs, render: 9ms)
+ GET / 200 in 12ms (compile: 2ms, render: 9ms)
+ GET / 200 in 15ms (compile: 1570µs, render: 14ms)
+ GET / 200 in 19ms (compile: 2ms, render: 17ms)
+ GET / 200 in 16ms (compile: 2ms, render: 14ms)
+ GET / 200 in 16ms (compile: 2ms, render: 14ms)
+ GET / 200 in 14ms (compile: 1750µs, render: 12ms)
+ GET / 200 in 11ms (compile: 1545µs, render: 10ms)
+ GET / 200 in 12ms (compile: 1780µs, render: 10ms)
+ GET / 200 in 13ms (compile: 3ms, render: 10ms)
+ GET / 200 in 12ms (compile: 1938µs, render: 10ms)

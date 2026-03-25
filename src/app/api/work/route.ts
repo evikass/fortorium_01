@@ -1,8 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
-import ZAI from 'z-ai-web-dev-sdk';
 
-// Увеличиваем таймаут для Vercel
 export const maxDuration = 60;
+
+// ============================================
+// AI HELPERS - используем fetch напрямую
+// ============================================
+async function getAIConfig() {
+  // Пробуем переменные окружения (для Vercel)
+  let baseUrl = process.env.Z_AI_BASE_URL;
+  let apiKey = process.env.Z_AI_API_KEY;
+  
+  // Если нет переменных, пробуем файл конфигурации (для локальной разработки)
+  if (!baseUrl || !apiKey) {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const os = await import('os');
+      
+      const configPaths = [
+        path.join(process.cwd(), '.z-ai-config'),
+        path.join(os.homedir(), '.z-ai-config'),
+        '/etc/.z-ai-config'
+      ];
+      
+      for (const filePath of configPaths) {
+        try {
+          const configStr = fs.readFileSync(filePath, 'utf-8');
+          const config = JSON.parse(configStr);
+          if (config.baseUrl && config.apiKey) {
+            baseUrl = config.baseUrl;
+            apiKey = config.apiKey;
+            console.log('✅ Config loaded from:', filePath);
+            break;
+          }
+        } catch (e) {
+          // Continue
+        }
+      }
+    } catch (e) {
+      console.log('⚠️ Could not load config file');
+    }
+  } else {
+    console.log('✅ Config loaded from environment variables');
+  }
+  
+  return { baseUrl, apiKey };
+}
 
 // ============================================
 // АГЕНТ-СЦЕНАРИСТ
@@ -102,16 +145,14 @@ async function writerAgent(projectTitle: string, projectDescription: string, sty
 async function artistAgent(sceneTitle: string, sceneDescription: string, style: string) {
   console.log('🎨 Запуск художника для:', sceneTitle);
   
-  let zai;
-  try {
-    zai = await ZAI.create();
-    console.log('✅ ZAI создан для генерации');
-  } catch (e: any) {
-    console.error('❌ Ошибка создания ZAI:', e?.message);
+  const { baseUrl, apiKey } = await getAIConfig();
+  
+  if (!baseUrl || !apiKey) {
+    console.error('❌ Нет конфигурации AI');
     return {
       success: false,
       imageUrl: null,
-      error: `ZAI init failed: ${e?.message}`,
+      error: 'AI not configured. Set Z_AI_BASE_URL and Z_AI_API_KEY environment variables.',
       prompt: sceneDescription
     };
   }
@@ -125,23 +166,46 @@ async function artistAgent(sceneTitle: string, sceneDescription: string, style: 
   };
   
   const stylePrompt = stylePrompts[style] || stylePrompts.disney;
-  const imagePrompt = `${stylePrompt}, ${sceneDescription}, high quality illustration`;
+  const imagePrompt = `${stylePrompt}, ${sceneDescription}, scene "${sceneTitle}", high quality illustration`;
   
   console.log('🖼️ Промпт:', imagePrompt.substring(0, 80) + '...');
+  console.log('🔗 API:', baseUrl);
   
   try {
     const startTime = Date.now();
     
-    const imageResponse = await zai.images.generations.create({
-      prompt: imagePrompt,
-      size: '1024x1024'
+    const response = await fetch(`${baseUrl}/images/generations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        prompt: imagePrompt,
+        size: '1024x1024',
+        n: 1
+      })
     });
     
     const elapsed = Date.now() - startTime;
-    console.log(`⏱️ Время генерации: ${elapsed}ms`);
+    console.log(`⏱️ Время: ${elapsed}ms, Status: ${response.status}`);
     
-    if (imageResponse.data?.[0]?.base64) {
-      const base64 = imageResponse.data[0].base64;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ API error:', response.status, errorText.substring(0, 200));
+      return {
+        success: false,
+        imageUrl: null,
+        error: `API error: ${response.status}`,
+        details: errorText.substring(0, 200),
+        prompt: imagePrompt
+      };
+    }
+    
+    const data = await response.json();
+    
+    if (data.data?.[0]?.base64) {
+      const base64 = data.data[0].base64;
       console.log('✅ Base64 получен, размер:', base64.length);
       
       return {
@@ -150,12 +214,20 @@ async function artistAgent(sceneTitle: string, sceneDescription: string, style: 
         prompt: imagePrompt,
         generationTime: elapsed
       };
+    } else if (data.data?.[0]?.url) {
+      console.log('✅ URL получен:', data.data[0].url);
+      return {
+        success: true,
+        imageUrl: data.data[0].url,
+        prompt: imagePrompt,
+        generationTime: elapsed
+      };
     } else {
-      console.error('❌ Нет base64 в ответе');
+      console.error('❌ Нет изображения в ответе');
       return {
         success: false,
         imageUrl: null,
-        error: 'No base64 in response',
+        error: 'No image in response',
         prompt: imagePrompt
       };
     }
