@@ -10,57 +10,44 @@ async function createZAI() {
     const ZAIModule = await import('z-ai-web-dev-sdk').then(m => m.default || m);
     return await ZAIModule.create();
   } catch (e) {
-    console.log('⚠️ SDK не инициализирован, используем fallback');
+    console.log('⚠️ SDK не доступен, использую публичный API');
     return null;
   }
 }
 
 // ============================================
-// FALLBACK: Pollinations.ai (бесплатный, без ключа)
+// POLLINATIONS.AI - бесплатный API (без ключа!)
 // ============================================
-async function generateWithPollinations(prompt: string, style: string): Promise<{ success: boolean; imageUrl: string | null; prompt: string }> {
+function generatePollinationsUrl(prompt: string, style: string): string {
   const stylePrompts: Record<string, string> = {
-    ghibli: 'Studio Ghibli style, Miyazaki, watercolor, magical',
-    disney: 'Disney animation style, vibrant colors',
-    pixar: 'Pixar 3D style, cinematic',
-    anime: 'Anime style, Japanese animation',
-    cartoon: 'Modern cartoon style, colorful'
+    ghibli: 'Studio Ghibli style, Miyazaki, watercolor, magical, dreamy',
+    disney: 'Disney animation style, vibrant colors, expressive characters',
+    pixar: 'Pixar 3D style, cinematic lighting, detailed, beautiful',
+    anime: 'Anime style, Japanese animation, stylized, dynamic',
+    cartoon: 'Modern cartoon style, colorful, playful, fun'
   };
   
   const stylePrompt = stylePrompts[style] || stylePrompts.disney;
-  const fullPrompt = `${stylePrompt}, ${prompt}, high quality, detailed, 4k`;
+  const fullPrompt = `${stylePrompt}, ${prompt}, high quality detailed illustration`;
   
-  // Pollinations.ai - бесплатный API для генерации изображений
   const encodedPrompt = encodeURIComponent(fullPrompt);
-  const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&seed=${Date.now()}`;
+  const seed = Math.floor(Math.random() * 1000000);
   
-  console.log('🌸 Pollinations URL:', imageUrl.substring(0, 80) + '...');
-  
-  // Проверяем что изображение доступно
-  try {
-    const checkResponse = await fetch(imageUrl, { method: 'HEAD' });
-    if (checkResponse.ok) {
-      return { success: true, imageUrl, prompt: fullPrompt };
-    }
-  } catch (e) {
-    console.log('⚠️ Pollinations не ответил');
-  }
-  
-  return { success: false, imageUrl: null, prompt: fullPrompt };
+  // Pollinations.ai - генерирует изображение по URL
+  return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&seed=${seed}`;
 }
 
 // ============================================
 // АГЕНТ-ХУДОЖНИК
 // ============================================
 async function artistAgent(sceneTitle: string, sceneDescription: string, style: string) {
-  console.log('🎨 Запуск художника для:', sceneTitle);
+  console.log('🎨 Художник для сцены:', sceneTitle);
   
-  // Пробуем SDK
   const zai = await createZAI();
   
   if (zai) {
     try {
-      console.log('✅ Использую SDK');
+      console.log('✅ SDK доступен, генерирую...');
       
       const stylePrompts: Record<string, string> = {
         ghibli: 'Studio Ghibli style, Miyazaki, watercolor, magical atmosphere',
@@ -81,7 +68,7 @@ async function artistAgent(sceneTitle: string, sceneDescription: string, style: 
       });
       
       const elapsed = Date.now() - startTime;
-      console.log(`⏱️ SDK: ${elapsed}ms`);
+      console.log(`⏱️ SDK время: ${elapsed}ms`);
       
       if (imageResponse.data?.[0]?.base64) {
         return {
@@ -101,34 +88,23 @@ async function artistAgent(sceneTitle: string, sceneDescription: string, style: 
         };
       }
     } catch (e: any) {
-      console.log('⚠️ SDK ошибка:', e?.message);
+      console.log('⚠️ SDK ошибка:', e?.message?.substring(0, 50));
     }
   }
   
-  // Fallback: Pollinations.ai
-  console.log('🌸 Использую Pollinations.ai fallback');
-  const result = await generateWithPollinations(`${sceneDescription}, scene titled "${sceneTitle}"`, style);
+  // Fallback: Pollinations.ai (работает везде, бесплатно!)
+  console.log('🌸 Использую Pollinations.ai');
   
-  if (result.success) {
-    return {
-      success: true,
-      imageUrl: result.imageUrl,
-      prompt: result.prompt,
-      generationTime: 5000,
-      source: 'pollinations'
-    };
-  }
-  
-  // Последний fallback: placeholder
-  const placeholderUrl = `https://picsum.photos/seed/${Date.now()}/1024/1024`;
+  const fullPrompt = `${sceneDescription}, scene "${sceneTitle}"`;
+  const imageUrl = generatePollinationsUrl(fullPrompt, style);
   
   return {
     success: true,
-    imageUrl: placeholderUrl,
-    prompt: sceneDescription,
+    imageUrl,
+    prompt: fullPrompt,
     generationTime: 100,
-    source: 'placeholder',
-    warning: 'Используется тестовое изображение'
+    source: 'pollinations',
+    note: 'Сгенерировано через Pollinations.ai'
   };
 }
 
@@ -136,28 +112,21 @@ async function artistAgent(sceneTitle: string, sceneDescription: string, style: 
 // АГЕНТ-СЦЕНАРИСТ
 // ============================================
 async function writerAgent(projectTitle: string, projectDescription: string, style: string) {
-  console.log('🎬 Запуск сценариста для:', projectTitle);
+  console.log('📝 Сценарист для:', projectTitle);
   
   const zai = await createZAI();
   
   if (zai) {
     try {
-      const prompt = `Ты профессиональный сценарист анимации в стиле ${style}. Создай короткий сценарий для мультфильма.
+      const prompt = `Ты профессиональный сценарист анимации в стиле ${style}. Создай короткий сценарий.
 
 Название: ${projectTitle}
-Описание идеи: ${projectDescription}
+Идея: ${projectDescription}
 
-Создай сценарий в формате JSON:
-{
-  "title": "Название",
-  "logline": "Краткое описание",
-  "characters": [{"name": "Имя", "description": "Описание", "traits": []}],
-  "scenes": [{"number": 1, "title": "Название", "location": "Место", "description": "Описание", "dialogue": [], "action": "", "duration": 5}],
-  "totalDuration": 30,
-  "mood": "настроение"
-}
+JSON формат:
+{"title":"Название","logline":"Кратко","characters":[{"name":"Имя","description":"Описание"}],"scenes":[{"number":1,"title":"Сцена","location":"Место","description":"Описание","dialogue":[{"character":"Имя","line":"Реплика"}],"action":"Действие","duration":5}],"totalDuration":30,"mood":"настроение"}
 
-3-5 сцен. Отвечай ТОЛЬКО JSON!`;
+3-5 сцен. Только JSON!`;
 
       const response = await zai.chat.completions.create({
         messages: [{ role: 'user', content: prompt }],
@@ -181,57 +150,34 @@ async function writerAgent(projectTitle: string, projectDescription: string, sty
     logline: projectDescription,
     mood: style === 'ghibli' ? 'Волшебный' : 'Приключенческий',
     characters: [
-      { name: "Главный Герой", description: "Протагонист истории", traits: ["смелый", "добрый"] },
-      { name: "Верный Друг", description: "Помощник героя", traits: ["верный", "оптимист"] }
+      { name: "Главный Герой", description: "Протагонист" },
+      { name: "Верный Друг", description: "Помощник" }
     ],
     scenes: [
-      {
-        number: 1,
-        title: "Начало пути",
-        location: "Дом героя",
-        description: `${projectDescription}. Приключение начинается.`,
-        dialogue: [{ character: "Главный Герой", line: "Вперёд к приключениям!" }],
-        action: "Герой отправляется в путь",
-        duration: 8
-      },
-      {
-        number: 2,
-        title: "Испытание",
-        location: "В пути",
-        description: "Герои преодолевают препятствия.",
-        dialogue: [{ character: "Верный Друг", line: "Мы справимся вместе!" }],
-        action: "Преодоление трудностей",
-        duration: 7
-      },
-      {
-        number: 3,
-        title: "Триумф",
-        location: "Цель",
-        description: "Победа и достижение цели.",
-        dialogue: [{ character: "Главный Герой", line: "Мы сделали это!" }],
-        action: "Празднование победы",
-        duration: 7
-      }
+      { number: 1, title: "Начало", location: "Дом", description: `${projectDescription}. Путешествие начинается.`, dialogue: [{ character: "Герой", line: "Вперёд!" }], action: "Начало пути", duration: 8 },
+      { number: 2, title: "Путь", location: "Дорога", description: "Преодоление препятствий.", dialogue: [{ character: "Друг", line: "Мы справимся!" }], action: "Испытания", duration: 7 },
+      { number: 3, title: "Победа", location: "Цель", description: "Триумф и достижение цели.", dialogue: [{ character: "Герой", line: "Мы сделали это!" }], action: "Победа", duration: 7 }
     ],
     totalDuration: 22
   };
 }
 
 // ============================================
-// API ENDPOINTS
+// API ROUTES
 // ============================================
 
 export async function GET() {
   return NextResponse.json({ 
     success: true, 
-    version: '3.1.6',
-    features: ['pollinations-fallback', 'picsum-fallback']
+    version: '3.1.7',
+    features: ['sdk', 'pollinations-fallback'],
+    message: 'API готов к работе!'
   });
 }
 
 export async function POST(request: NextRequest) {
-  console.log('='.repeat(50));
-  console.log('📥 API work request v3.1.6');
+  console.log('='.repeat(40));
+  console.log('📥 Work API v3.1.7');
   
   try {
     const body = await request.json();
@@ -241,48 +187,39 @@ export async function POST(request: NextRequest) {
     
     switch (action) {
       case 'write_script': {
-        const title = data?.title || 'Новый проект';
-        const description = data?.description || 'Приключения';
-        const style = data?.style || 'disney';
-        
-        const script = await writerAgent(title, description, style);
-        
-        return NextResponse.json({
-          success: true,
-          message: '✍️ Сценарий создан!',
-          script
-        });
+        const script = await writerAgent(
+          data?.title || 'Проект',
+          data?.description || 'Приключения',
+          data?.style || 'disney'
+        );
+        return NextResponse.json({ success: true, message: '✍️ Сценарий создан!', script });
       }
       
       case 'create_storyboard': {
-        const { sceneTitle, sceneDescription, style } = data;
-        
-        const result = await artistAgent(sceneTitle, sceneDescription, style || 'disney');
-        
+        const result = await artistAgent(
+          data?.sceneTitle || 'Сцена',
+          data?.sceneDescription || 'Описание',
+          data?.style || 'disney'
+        );
         return NextResponse.json({
           success: result.success,
-          message: result.success 
-            ? `🎨 Изображение создано! (${result.source})` 
-            : '⚠️ Ошибка генерации',
+          message: result.success ? `🎨 Изображение создано! (${result.source})` : '❌ Ошибка',
           image: result
         });
       }
       
       case 'run_full_pipeline': {
-        const title = data?.title || 'Новый проект';
+        const title = data?.title || 'Проект';
         const description = data?.description || 'Приключения';
         const style = data?.style || 'disney';
         
-        const results: any = {};
+        const script = await writerAgent(title, description, style);
         
-        console.log('📝 Генерация сценария...');
-        results.script = await writerAgent(title, description, style);
-        
-        if (results.script?.scenes?.[0]) {
-          console.log('🎨 Генерация изображения...');
-          results.storyboard = await artistAgent(
-            results.script.scenes[0].title,
-            results.script.scenes[0].description,
+        let storyboard = null;
+        if (script?.scenes?.[0]) {
+          storyboard = await artistAgent(
+            script.scenes[0].title,
+            script.scenes[0].description,
             style
           );
         }
@@ -290,7 +227,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: true,
           message: '🚀 Пайплайн выполнен!',
-          results
+          results: { script, storyboard }
         });
       }
       
@@ -298,10 +235,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Неизвестное действие' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('❌ Критическая ошибка:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error?.message || String(error)
-    }, { status: 500 });
+    console.error('❌ Error:', error?.message);
+    return NextResponse.json({ success: false, error: error?.message }, { status: 500 });
   }
 }
