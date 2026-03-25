@@ -5721,3 +5721,44 @@ Director error: TypeError: Cannot read properties of undefined (reading 'findMan
  GET / 200 in 12ms (compile: 1780µs, render: 10ms)
  GET / 200 in 13ms (compile: 3ms, render: 10ms)
  GET / 200 in 12ms (compile: 1938µs, render: 10ms)
+✓ Compiled in 378ms
+Director error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/director/route.ts:112:45)
+  110 |   try {
+  111 |     // Получаем данные студии
+> 112 |     const hiredAgents = await db.hiredAgent.findMany();
+      |                                             ^
+  113 |     const projects = await db.animationProject.findMany();
+  114 |     
+  115 |     // Получаем кандидатов на утверждение
+ GET /api/director 500 in 98ms (compile: 38ms, render: 60ms)
+Error: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/candidates/route.ts:73:43)
+  71 |   try {
+  72 |     // Проверяем pending кандидатов
+> 73 |     let pending = await db.agentCandidate.findMany({
+     |                                           ^
+  74 |       where: { status: 'pending' },
+  75 |       orderBy: { createdAt: 'desc' },
+  76 |       take: 10
+ GET /api/candidates 500 in 66ms (compile: 18ms, render: 48ms)
+Error fetching hired agents: TypeError: Cannot read properties of undefined (reading 'findMany')
+    at GET (src/app/api/agents/hire/route.ts:7:40)
+   5 | export async function GET() {
+   6 |   try {
+>  7 |     const agents = await db.hiredAgent.findMany({
+     |                                        ^
+   8 |       include: {
+   9 |         tasks: {
+  10 |           where: { status: 'completed' },
+ GET /api/agents/hire 500 in 114ms (compile: 26ms, render: 88ms)
+ GET /api/work 200 in 140ms (compile: 135ms, render: 5ms)
+==================================================
+📥 API work request v3.1.5
+📋 Action: create_storyboard
+🎨 Запуск художника для: Magical Garden
+✅ ZAI создан для генерации
+🖼️ Промпт: Studio Ghibli style, Miyazaki, watercolor, magical atmosphere, A cute fluffy cat...
+⏱️ Время: 8317ms
+✅ Base64 размер: 199992
+ POST /api/work 200 in 8.4s (compile: 52ms, render: 8.3s)

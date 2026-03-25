@@ -2,49 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const maxDuration = 60;
 
-// ============================================
-// AI HELPERS - используем fetch напрямую
-// ============================================
-async function getAIConfig() {
-  // Пробуем переменные окружения (для Vercel)
-  let baseUrl = process.env.Z_AI_BASE_URL;
-  let apiKey = process.env.Z_AI_API_KEY;
-  
-  // Если нет переменных, пробуем файл конфигурации (для локальной разработки)
-  if (!baseUrl || !apiKey) {
-    try {
-      const fs = await import('fs');
-      const path = await import('path');
-      const os = await import('os');
-      
-      const configPaths = [
-        path.join(process.cwd(), '.z-ai-config'),
-        path.join(os.homedir(), '.z-ai-config'),
-        '/etc/.z-ai-config'
-      ];
-      
-      for (const filePath of configPaths) {
-        try {
-          const configStr = fs.readFileSync(filePath, 'utf-8');
-          const config = JSON.parse(configStr);
-          if (config.baseUrl && config.apiKey) {
-            baseUrl = config.baseUrl;
-            apiKey = config.apiKey;
-            console.log('✅ Config loaded from:', filePath);
-            break;
-          }
-        } catch (e) {
-          // Continue
-        }
-      }
-    } catch (e) {
-      console.log('⚠️ Could not load config file');
-    }
-  } else {
-    console.log('✅ Config loaded from environment variables');
-  }
-  
-  return { baseUrl, apiKey };
+// Динамический импорт SDK для работы в Node.js окружении
+async function createZAI() {
+  // @ts-ignore
+  const ZAIModule = await import('z-ai-web-dev-sdk').then(m => m.default || m);
+  return await ZAIModule.create();
 }
 
 // ============================================
@@ -53,16 +15,10 @@ async function getAIConfig() {
 async function writerAgent(projectTitle: string, projectDescription: string, style: string) {
   console.log('🎬 Запуск сценариста для:', projectTitle);
   
-  let zai;
   try {
-    zai = await ZAI.create();
+    const zai = await createZAI();
     console.log('✅ ZAI создан');
-  } catch (e) {
-    console.error('❌ Ошибка ZAI:', e);
-    zai = null;
-  }
-  
-  if (zai) {
+    
     const prompt = `Ты профессиональный сценарист анимации в стиле ${style}. Создай короткий сценарий для мультфильма.
 
 Название: ${projectTitle}
@@ -70,7 +26,7 @@ async function writerAgent(projectTitle: string, projectDescription: string, sty
 
 Создай сценарий в формате JSON:
 {
-  "title": "Название сценария",
+  "title": "Название",
   "logline": "Краткое описание",
   "characters": [{"name": "Имя", "description": "Описание", "traits": []}],
   "scenes": [{"number": 1, "title": "Название", "location": "Место", "description": "Описание", "dialogue": [], "action": "", "duration": 5}],
@@ -80,21 +36,19 @@ async function writerAgent(projectTitle: string, projectDescription: string, sty
 
 3-5 сцен. Отвечай ТОЛЬКО JSON!`;
 
-    try {
-      const response = await zai.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.8
-      });
+    const response = await zai.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.8
+    });
 
-      const content = response.choices[0]?.message?.content || '';
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
-      }
-    } catch (e) {
-      console.error('❌ AI ошибка:', e);
+    const content = response.choices[0]?.message?.content || '';
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
     }
+  } catch (e) {
+    console.error('❌ AI ошибка:', e);
   }
   
   // Fallback сценарий
@@ -104,7 +58,7 @@ async function writerAgent(projectTitle: string, projectDescription: string, sty
     mood: 'Приключенческий',
     characters: [
       { name: "Главный Герой", description: "Протагонист", traits: ["смелый", "добрый"] },
-      { name: "Верный Друг", description: "Помощник", traits: ["верный", "оптимист"] }
+      { name: "Верный Друг", description: "Помощник", traits: ["верный"] }
     ],
     scenes: [
       {
@@ -112,7 +66,7 @@ async function writerAgent(projectTitle: string, projectDescription: string, sty
         title: "Начало пути",
         location: "Дом героя",
         description: `${projectDescription}. Приключение начинается.`,
-        dialogue: [{ character: "Главный Герой", line: "Вперёд к приключениям!" }],
+        dialogue: [{ character: "Главный Герой", line: "Вперёд!" }],
         action: "Герой отправляется в путь",
         duration: 8
       },
@@ -121,7 +75,7 @@ async function writerAgent(projectTitle: string, projectDescription: string, sty
         title: "Испытание",
         location: "В пути",
         description: "Герои преодолевают препятствия.",
-        dialogue: [{ character: "Верный Друг", line: "Мы справимся вместе!" }],
+        dialogue: [{ character: "Верный Друг", line: "Мы справимся!" }],
         action: "Преодоление трудностей",
         duration: 7
       },
@@ -145,68 +99,36 @@ async function writerAgent(projectTitle: string, projectDescription: string, sty
 async function artistAgent(sceneTitle: string, sceneDescription: string, style: string) {
   console.log('🎨 Запуск художника для:', sceneTitle);
   
-  const { baseUrl, apiKey } = await getAIConfig();
-  
-  if (!baseUrl || !apiKey) {
-    console.error('❌ Нет конфигурации AI');
-    return {
-      success: false,
-      imageUrl: null,
-      error: 'AI not configured. Set Z_AI_BASE_URL and Z_AI_API_KEY environment variables.',
-      prompt: sceneDescription
-    };
-  }
-  
-  const stylePrompts: Record<string, string> = {
-    ghibli: 'Studio Ghibli style, Miyazaki, watercolor, magical atmosphere',
-    disney: 'Disney animation style, vibrant colors, expressive',
-    pixar: 'Pixar 3D style, cinematic lighting, detailed',
-    anime: 'Anime style, Japanese animation, stylized',
-    cartoon: 'Modern cartoon style, colorful, playful'
-  };
-  
-  const stylePrompt = stylePrompts[style] || stylePrompts.disney;
-  const imagePrompt = `${stylePrompt}, ${sceneDescription}, scene "${sceneTitle}", high quality illustration`;
-  
-  console.log('🖼️ Промпт:', imagePrompt.substring(0, 80) + '...');
-  console.log('🔗 API:', baseUrl);
-  
   try {
+    const zai = await createZAI();
+    console.log('✅ ZAI создан для генерации');
+    
+    const stylePrompts: Record<string, string> = {
+      ghibli: 'Studio Ghibli style, Miyazaki, watercolor, magical atmosphere',
+      disney: 'Disney animation style, vibrant colors, expressive',
+      pixar: 'Pixar 3D style, cinematic lighting, detailed',
+      anime: 'Anime style, Japanese animation, stylized',
+      cartoon: 'Modern cartoon style, colorful, playful'
+    };
+    
+    const stylePrompt = stylePrompts[style] || stylePrompts.disney;
+    const imagePrompt = `${stylePrompt}, ${sceneDescription}, scene "${sceneTitle}", high quality illustration`;
+    
+    console.log('🖼️ Промпт:', imagePrompt.substring(0, 80) + '...');
+    
     const startTime = Date.now();
     
-    const response = await fetch(`${baseUrl}/images/generations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        prompt: imagePrompt,
-        size: '1024x1024',
-        n: 1
-      })
+    const imageResponse = await zai.images.generations.create({
+      prompt: imagePrompt,
+      size: '1024x1024'
     });
     
     const elapsed = Date.now() - startTime;
-    console.log(`⏱️ Время: ${elapsed}ms, Status: ${response.status}`);
+    console.log(`⏱️ Время: ${elapsed}ms`);
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ API error:', response.status, errorText.substring(0, 200));
-      return {
-        success: false,
-        imageUrl: null,
-        error: `API error: ${response.status}`,
-        details: errorText.substring(0, 200),
-        prompt: imagePrompt
-      };
-    }
-    
-    const data = await response.json();
-    
-    if (data.data?.[0]?.base64) {
-      const base64 = data.data[0].base64;
-      console.log('✅ Base64 получен, размер:', base64.length);
+    if (imageResponse.data?.[0]?.base64) {
+      const base64 = imageResponse.data[0].base64;
+      console.log('✅ Base64 размер:', base64.length);
       
       return {
         success: true,
@@ -214,11 +136,11 @@ async function artistAgent(sceneTitle: string, sceneDescription: string, style: 
         prompt: imagePrompt,
         generationTime: elapsed
       };
-    } else if (data.data?.[0]?.url) {
-      console.log('✅ URL получен:', data.data[0].url);
+    } else if (imageResponse.data?.[0]?.url) {
+      console.log('✅ URL:', imageResponse.data[0].url);
       return {
         success: true,
-        imageUrl: data.data[0].url,
+        imageUrl: imageResponse.data[0].url,
         prompt: imagePrompt,
         generationTime: elapsed
       };
@@ -237,7 +159,7 @@ async function artistAgent(sceneTitle: string, sceneDescription: string, style: 
       success: false,
       imageUrl: null,
       error: error?.message,
-      prompt: imagePrompt
+      prompt: sceneDescription
     };
   }
 }
@@ -247,12 +169,12 @@ async function artistAgent(sceneTitle: string, sceneDescription: string, style: 
 // ============================================
 
 export async function GET() {
-  return NextResponse.json({ success: true, tasks: [] });
+  return NextResponse.json({ success: true, tasks: [], version: '3.1.5' });
 }
 
 export async function POST(request: NextRequest) {
   console.log('='.repeat(50));
-  console.log('📥 API work request');
+  console.log('📥 API work request v3.1.5');
   
   try {
     const body = await request.json();
@@ -282,7 +204,7 @@ export async function POST(request: NextRequest) {
         
         return NextResponse.json({
           success: result.success,
-          message: result.success ? '🎨 Изображение создано!' : '⚠️ Ошибка генерации',
+          message: result.success ? '🎨 Изображение создано!' : `⚠️ ${result.error || 'Ошибка генерации'}`,
           image: result
         });
       }
