@@ -2,14 +2,18 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
-  // Force fresh builds
+  // Disable caching completely
+  onDemandEntries: {
+    maxInactiveAge: 0,
+    pagesBufferLength: 0,
+  },
+  // Generate unique build ID
   generateBuildId: async () => {
-    return `build-${Date.now()}`;
+    return `fortorium-v5-${Date.now()}`;
   },
 };
 
