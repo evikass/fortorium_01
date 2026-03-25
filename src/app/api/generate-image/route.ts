@@ -5,6 +5,19 @@ import crypto from 'crypto';
 const STABILITY_API_KEY = process.env.STABILITY_API_KEY || 'sk-V2gw16jrcQEiWM0euXqCBzH2rbPjjT2w8MDpvJgiQvHYvPUu';
 const STABILITY_API_URL = 'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image';
 
+// Valid SDXL dimensions
+const SDXL_DIMENSIONS = [
+  { width: 1024, height: 1024 },
+  { width: 1152, height: 896 },
+  { width: 1216, height: 832 },
+  { width: 1344, height: 768 },
+  { width: 1536, height: 640 },
+  { width: 640, height: 1536 },
+  { width: 768, height: 1344 },
+  { width: 832, height: 1216 },
+  { width: 896, height: 1152 },
+];
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -23,6 +36,12 @@ export async function POST(request: NextRequest) {
       : `Scene: ${prompt}, animated movie style, cinematic, beautiful, high quality, detailed`;
 
     try {
+      // Select dimensions based on type
+      // Characters: portrait (768x1344), Scenes: landscape (1344x768)
+      const dimensions = type === 'character'
+        ? SDXL_DIMENSIONS[6] // 768x1344 portrait
+        : SDXL_DIMENSIONS[3]; // 1344x768 landscape
+
       // Try Stability AI first
       const stabilityResponse = await fetch(STABILITY_API_URL, {
         method: 'POST',
@@ -39,8 +58,8 @@ export async function POST(request: NextRequest) {
             }
           ],
           cfg_scale: 7,
-          height: 1024,
-          width: 1024,
+          height: dimensions.height,
+          width: dimensions.width,
           steps: 30,
           samples: 1,
           style_preset: type === 'character' ? 'anime' : 'cinematic'
@@ -54,9 +73,13 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({
             success: true,
             image: `data:image/png;base64,${data.artifacts[0].base64}`,
-            source: 'stability-ai'
+            source: 'stability-ai',
+            dimensions: dimensions
           });
         }
+      } else {
+        const errorData = await stabilityResponse.json();
+        console.log('Stability AI error:', errorData);
       }
       
       // If Stability AI fails, log and fall back
